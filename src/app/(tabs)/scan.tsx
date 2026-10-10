@@ -8,7 +8,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 
 import { ConfidenceRing, PulseRings, ScanFrame } from '@/components/animated';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconBubble, Input, PressableScale, ProgressBar, Row, Screen, Segmented } from '@/components/ui';
-import { aiOnline, CareSheet, diagnosePlant, DiagnosisResult, identifyPlant, Identification } from '@/lib/ai';
+import { aiOnline, CareSheet, identifyOnline, diagnosePlant, DiagnosisResult, identifyPlant, Identification } from '@/lib/ai';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, GradientName, space } from '@/theme';
@@ -108,7 +108,7 @@ export default function Scan() {
         ]}
       />
 
-      {!aiOnline && (
+      {!(mode === 'identify' ? identifyOnline : aiOnline) && (
         <Animated.View entering={FadeIn}>
           <Row gap={6} justify="center">
             <Ionicons name="cloud-offline-outline" size={14} color={colors.sun} />

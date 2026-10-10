@@ -9,7 +9,7 @@ A React Native + Expo (SDK 57) gardening companion with an animated, glass-style
 | --- | --- | --- |
 | **Registration & login** | Email accounts with salted and stretched SHA-256 password hashes, session token in the encrypted Secure Store, a lockout after 5 failed logins, and a password-strength meter. You can **explore as a guest** first; anything you create is moved into your account when you register. Google / Apple / Facebook buttons are in place and need OAuth client IDs (see below). Cloud sync across devices through Supabase. | `src/lib/auth.tsx`, `src/lib/supabase.ts`, `src/lib/sync.ts` |
 | **Multilingual** | English and Arabic with full right-to-left layout. Switch any time from the toggle or Settings. The first language follows the device language. | `src/lib/i18n.tsx`, `src/lib/translations.ts` |
-| **Plant identifier** | Take a photo or pick one from the gallery. You get the common and scientific name, family, a confidence ring and a 6-part care guide, then **Add to my garden**, which also creates reminders. | `src/app/(tabs)/scan.tsx` |
+| **Plant identifier** | Take a photo or pick one from the gallery (Pl@ntNet, free). You get the common and scientific name, family, a confidence ring and a 6-part care guide, then **Add to my garden**, which also creates reminders. | `src/app/(tabs)/scan.tsx` |
 | **AI diagnosis & assistant** | Photo and symptom diagnosis of **pests, diseases and nutrient deficiencies**, with severity, causes, treatment steps and prevention. A chat assistant knows your garden and the current season. | `src/lib/ai.ts`, `src/app/(tabs)/assistant.tsx` |
 | **Guides & tutorials** | Step-by-step lessons (watering, planting, pruning, Gulf soil, natural pest control) with visuals, quick-check quizzes, saved progress and a completion screen. | `src/app/guides/*`, `src/data/guides.ts` |
 | **Local shops directory** | Nurseries, markets, equipment suppliers and experts in Bahrain, with search, filters, distance sorting, and call / WhatsApp / directions buttons. | `src/app/shops.tsx`, `src/data/shops.ts` |
@@ -51,7 +51,28 @@ The free tier is enough.
    Confirm email**.
 5. **Restart the app** with `npx expo start -c` (`-c` clears the cache so the new `.env` is picked up).
 
-### Optional: real AI through Supabase (keeps your Anthropic key secret)
+## Free AI (recommended)
+
+| Service | Powers | Free limit | Get a key |
+| --- | --- | --- | --- |
+| **Pl@ntNet** | Plant identification from photos | 500 identifications a day (non-commercial) | [my.plantnet.org](https://my.plantnet.org): sign up, then open your account's **API key** section |
+| **Google Gemini** | Diagnosis, chat assistant, care sheets for plants not in the built-in list | Free tier with daily request limits | [aistudio.google.com/apikey](https://aistudio.google.com/apikey): **Create API key** |
+
+Add the keys to `.env`, then restart with `npx expo start -c`:
+
+```bash
+EXPO_PUBLIC_PLANTNET_API_KEY=your-plantnet-key
+EXPO_PUBLIC_GEMINI_API_KEY=your-gemini-key
+```
+
+If you use only one of them, the app still works and falls back to the built-in knowledge base for the rest. Keys in
+`.env` are built into the app, so someone could extract them and use up your free quota. No money is at risk on free
+tiers. Google may use free-tier Gemini requests to improve its products, so don't send private data.
+
+If Google renames or retires the default model, set `EXPO_PUBLIC_GEMINI_MODEL` to a current free model from the list in
+Google AI Studio.
+
+### Paid alternative: Claude through Supabase (keeps your Anthropic key secret)
 
 ```bash
 npx supabase login

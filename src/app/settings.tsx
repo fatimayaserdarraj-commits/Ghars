@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconName, Row, Screen, Segmented } from '@/components/ui';
-import { aiOnline } from '@/lib/ai';
+import { aiOnline, aiProvider } from '@/lib/ai';
+import { plantnetEnabled } from '@/lib/plantnet';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/data';
 import { useI18n } from '@/lib/i18n';
@@ -89,7 +90,10 @@ export default function Settings() {
           <View style={{ height: 1, backgroundColor: colors.border, marginVertical: space.lg }} />
           <Row justify="space-between">
             <InfoRow icon="sparkles-outline" title={t('aiStatus')} body="" />
-            <Badge text={aiOnline ? t('aiOnline') : t('aiOffline')} color={aiOnline ? colors.primary : colors.sun} />
+            <Badge
+              text={aiOnline || plantnetEnabled ? [aiProvider, plantnetEnabled && 'Pl@ntNet'].filter(Boolean).join(' + ') : t('aiOffline')}
+              color={aiOnline || plantnetEnabled ? colors.primary : colors.sun}
+            />
           </Row>
         </GlassCard>
       </Appear>

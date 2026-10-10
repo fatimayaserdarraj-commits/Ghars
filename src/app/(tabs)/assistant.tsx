@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TypingDots } from '@/components/animated';
 import { AppText, Badge, Header, IconButton, PressableScale, Row, ScreenBackground, TAB_BAR_SPACE } from '@/components/ui';
 import { plantById } from '@/data/plants';
-import { aiOnline, chatReply } from '@/lib/ai';
+import { aiOnline, aiProvider, chatReply } from '@/lib/ai';
 import { ChatMessage, useData } from '@/lib/data';
 import { useI18n } from '@/lib/i18n';
 import { uid } from '@/lib/storage';
@@ -83,7 +83,7 @@ export default function Assistant() {
         right={chat.length ? <IconButton icon="trash-outline" onPress={() => setChat([])} /> : undefined}
       />
       <Row justify="center" style={{ marginBottom: space.sm }}>
-        <Badge text={aiOnline ? `● ${t('aiOnline')}` : `○ ${t('aiOffline')}`} color={aiOnline ? colors.primary : colors.sun} />
+        <Badge text={aiOnline ? `● ${t('aiOnline')} · ${aiProvider}` : `○ ${t('aiOffline')}`} color={aiOnline ? colors.primary : colors.sun} />
       </Row>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList

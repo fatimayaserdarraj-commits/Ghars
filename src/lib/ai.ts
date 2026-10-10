@@ -3,16 +3,22 @@ import { PLANTS, PlantInfo } from '@/data/plants';
 import { currentSeason } from '@/data/seasons';
 
 import type { ChatMessage } from './data';
+import { identifyWithPlantNet, plantnetEnabled } from './plantnet';
 import { supabase, supabaseAnonKey } from './supabase';
 import { Lang } from './translations';
 
 /**
- * AI layer. When EXPO_PUBLIC_ANTHROPIC_API_KEY is set, plant identification, diagnosis and the chat
- * assistant are powered by Claude (vision + text). Otherwise an on-device knowledge base is used.
+ * AI layer. Providers, in order of preference:
+ *  - Pl@ntNet (free) for photo identification — EXPO_PUBLIC_PLANTNET_API_KEY
+ *  - Google Gemini (free tier) for diagnosis, chat and care sheets — EXPO_PUBLIC_GEMINI_API_KEY
+ *  - Claude, directly (EXPO_PUBLIC_ANTHROPIC_API_KEY) or through the Supabase `ai` Edge Function
+ * With none configured, or when a request fails, the on-device knowledge base is used.
  *
- * NOTE: a key bundled into a client app can be extracted. For production, route these calls
- * through your own backend proxy and set EXPO_PUBLIC_AI_PROXY_URL instead.
+ * NOTE: a key bundled into a client app can be extracted. Free-tier keys have no billing attached,
+ * so the risk is someone using up your daily quota, not your money.
  */
+const GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 // With Supabase connected, the `ai` Edge Function (supabase/functions/ai) is used by default.
 const PROXY_URL =
@@ -22,7 +28,12 @@ const PROXY_URL =
     : undefined);
 const MODEL = process.env.EXPO_PUBLIC_ANTHROPIC_MODEL || 'claude-sonnet-5-5';
 
-export const aiOnline = !!(API_KEY || PROXY_URL);
+/** A language model is configured (diagnosis + chat). */
+export const aiOnline = !!(GEMINI_KEY || API_KEY || PROXY_URL);
+/** Display name of the language model in use, for status badges. */
+export const aiProvider = GEMINI_KEY ? 'Gemini' : API_KEY || PROXY_URL ? 'Claude' : null;
+/** Photo identification can use a real service. */
+export const identifyOnline = aiOnline || plantnetEnabled;
 
 export type CareSheet = Record<'water' | 'light' | 'soil' | 'temperature' | 'fertilizer' | 'humidity', string>;
 
@@ -54,7 +65,40 @@ type Block =
   | { type: 'text'; text: string }
   | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } };
 
-async function callClaude(system: string, messages: { role: 'user' | 'assistant'; content: string | Block[] }[], maxTokens = 1024) {
+type Msg = { role: 'user' | 'assistant'; content: string | Block[] };
+
+/** Send a prompt to whichever language model is configured and return its text reply. */
+function callClaude(system: string, messages: Msg[], maxTokens = 1024) {
+  return GEMINI_KEY ? callGemini(system, messages, maxTokens) : callAnthropic(system, messages, maxTokens);
+}
+
+async function callGemini(system: string, messages: Msg[], maxTokens: number) {
+  const contents = messages.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts:
+      typeof m.content === 'string'
+        ? [{ text: m.content }]
+        : m.content.map((b) => (b.type === 'text' ? { text: b.text } : { inline_data: { mime_type: b.source.media_type, data: b.source.data } })),
+  }));
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_KEY! },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      // Generous limit: "thinking" models spend part of the budget before answering.
+      generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 4096), temperature: 0.4 },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini request failed (${res.status})`);
+  const json = await res.json();
+  const parts = (json.candidates?.[0]?.content?.parts ?? []) as { text?: string }[];
+  const text = parts.map((p) => p.text ?? '').join('');
+  if (!text) throw new Error('Gemini returned no text');
+  return text;
+}
+
+async function callAnthropic(system: string, messages: Msg[], maxTokens: number) {
   const url = PROXY_URL || 'https://api.anthropic.com/v1/messages';
   const headers: Record<string, string> = { 'content-type': 'application/json', 'anthropic-version': '2023-06-01' };
   if (PROXY_URL && supabase) {
@@ -119,7 +163,61 @@ const imageBlock = (base64: string, mime = 'image/jpeg'): Block => ({
   source: { type: 'base64', media_type: mime, data: base64 },
 });
 
+const GENERIC_CARE: Record<keyof CareSheet, Record<Lang, string>> = {
+  water: { en: 'Water when the top 2–3 cm of soil is dry; never leave it standing in water.', ar: 'اسقِ عندما يجف أعلى 2–3 سم من التربة؛ ولا تتركها في الماء.' },
+  light: { en: 'Bright light; shade from harsh afternoon sun in summer.', ar: 'إضاءة ساطعة؛ مع حماية من شمس الظهيرة الحارقة صيفًا.' },
+  soil: { en: 'Well-drained potting mix enriched with compost.', ar: 'خلطة جيدة الصرف مدعّمة بالسماد العضوي.' },
+  temperature: { en: 'Most plants prefer 18–32 °C; protect from extreme heat.', ar: 'تفضّل معظم النباتات 18–32 °م؛ احمِها من الحرارة الشديدة.' },
+  fertilizer: { en: 'Balanced fertilizer monthly during active growth.', ar: 'سماد متوازن شهريًا خلال فترة النمو.' },
+  humidity: { en: 'Moderate; mist or group plants in air-conditioned rooms.', ar: 'معتدلة؛ رشّ الرذاذ أو اجمع النباتات في الغرف المكيّفة.' },
+};
+
+const genericCare = (lang: Lang) =>
+  Object.fromEntries(Object.entries(GENERIC_CARE).map(([k, v]) => [k, v[lang]])) as CareSheet;
+
+/** Identify with Pl@ntNet, then fill in care details from the local database or the language model. */
+async function identifyViaPlantNet(uri: string, lang: Lang): Promise<Identification | null> {
+  const match = await identifyWithPlantNet(uri, lang);
+  if (!match) return null;
+  const sci = match.scientific.toLowerCase();
+  const local = PLANTS.find((p) => p.scientific.toLowerCase().startsWith(sci) || sci.startsWith(p.scientific.toLowerCase()));
+  if (local) return { ...fromPlant(local, lang, match.score, false), scientific: match.scientific };
+
+  const base: Identification = {
+    matchId: null,
+    emoji: '🌿',
+    name: match.commonName || match.scientific,
+    scientific: match.scientific,
+    family: match.family,
+    description: '',
+    confidence: match.score,
+    care: genericCare(lang),
+    demo: false,
+  };
+  if (!aiOnline) return base;
+  try {
+    const text = await callClaude(
+      `You are an expert gardener in the Arabian Gulf. Reply ONLY with JSON: {"emoji": string, "common_name": string, ` +
+        `"description": string (2 sentences), "care": {"water","light","soil","temperature","fertilizer","humidity"}} ` +
+        `(each one practical sentence for a hot, dry climate). Write all text values in ${langName(lang)}.`,
+      [{ role: 'user', content: `Plant: ${match.scientific} (family ${match.family}).` }],
+    );
+    const r = parseJSON<{ emoji: string; common_name: string; description: string; care: CareSheet }>(text);
+    return { ...base, emoji: r.emoji || base.emoji, name: r.common_name || base.name, description: r.description, care: { ...base.care, ...r.care } };
+  } catch {
+    return base;
+  }
+}
+
 export async function identifyPlant(base64: string | undefined, seed: string, lang: Lang): Promise<Identification> {
+  if (plantnetEnabled) {
+    try {
+      const r = await identifyViaPlantNet(seed, lang);
+      if (r) return r;
+    } catch {
+      // fall through to the next provider
+    }
+  }
   if (aiOnline && base64) {
     try {
       const ids = PLANTS.map((p) => p.id).join(', ');
