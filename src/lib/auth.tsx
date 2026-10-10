@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { readJSON, secure, uid, writeJSON } from './storage';
+import { supabase } from './supabase';
 
 export type User = {
   id: string;
@@ -13,7 +14,7 @@ export type User = {
 
 type StoredAccount = User & { salt: string; hash: string };
 
-type AuthError = 'errExists' | 'errCredentials' | 'errLocked';
+type AuthError = 'errExists' | 'errCredentials' | 'errLocked' | 'errConfirmEmail' | 'errNetwork';
 
 type AuthValue = {
   user: User | null;
@@ -48,6 +49,24 @@ function toUser({ salt: _s, hash: _h, ...user }: StoredAccount): User {
   return user;
 }
 
+type SupabaseUser = { id: string; email?: string; created_at: string; user_metadata?: { name?: string } };
+const fromSupabase = (u: SupabaseUser): User => ({
+  id: u.id,
+  name: u.user_metadata?.name ?? u.email?.split('@')[0] ?? '',
+  email: u.email ?? '',
+  createdAt: Date.parse(u.created_at),
+  provider: 'email',
+});
+
+function supabaseError(message: string): AuthError {
+  const m = message.toLowerCase();
+  if (m.includes('already registered') || m.includes('already exists')) return 'errExists';
+  if (m.includes('not confirmed')) return 'errConfirmEmail';
+  if (m.includes('invalid login') || m.includes('invalid credentials')) return 'errCredentials';
+  if (m.includes('rate limit') || m.includes('too many')) return 'errLocked';
+  return 'errNetwork';
+}
+
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -55,10 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // With Supabase, follow its session (restored from storage, refreshed automatically).
+    const sub = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) setUser(fromSupabase(session.user));
+      else setUser((u) => (u?.provider === 'guest' ? u : null));
+    });
     (async () => {
       try {
         const session = await secure.get(SESSION_KEY);
-        if (session === 'guest') setUser(GUEST);
+        if (supabase) {
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.user) setUser(fromSupabase(data.session.user));
+          else if (session === 'guest') setUser(GUEST);
+        } else if (session === 'guest') setUser(GUEST);
         else if (session) {
           const accounts = await readJSON<StoredAccount[]>(ACCOUNTS_KEY, []);
           const acc = accounts.find((a) => a.id === session);
@@ -68,9 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setReady(true);
       }
     })();
+    return () => sub?.data.subscription.unsubscribe();
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
+    if (supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: { data: { name: name.trim() } },
+      });
+      if (error) return supabaseError(error.message);
+      // Supabase returns no session when "Confirm email" is on (an identities-less user means the email is taken).
+      if (data.user && data.user.identities?.length === 0) return 'errExists' as const;
+      if (!data.session) return 'errConfirmEmail' as const;
+      await secure.remove(SESSION_KEY);
+      setUser(fromSupabase(data.session.user));
+      return null;
+    }
     const accounts = await readJSON<StoredAccount[]>(ACCOUNTS_KEY, []);
     const normalized = email.trim().toLowerCase();
     if (accounts.some((a) => a.email === normalized)) return 'errExists' as const;
@@ -92,6 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     if (Date.now() < lockedUntil) return 'errLocked' as const;
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error) return supabaseError(error.message);
+      await secure.remove(SESSION_KEY);
+      setUser(fromSupabase(data.user));
+      return null;
+    }
     const accounts = await readJSON<StoredAccount[]>(ACCOUNTS_KEY, []);
     const acc = accounts.find((a) => a.email === email.trim().toLowerCase());
     if (!acc || (await hashPassword(password, acc.salt)) !== acc.hash) {
@@ -114,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    await supabase?.auth.signOut();
     await secure.remove(SESSION_KEY);
     setUser(null);
   }, []);

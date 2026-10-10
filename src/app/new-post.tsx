@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { POST_TYPES } from '@/components/post-card';
 import { AppText, Chip, GlassCard, GradientButton, Header, Input, PressableScale, Row, Screen } from '@/components/ui';
@@ -16,6 +16,7 @@ export default function NewPost() {
   const [type, setType] = useState<PostType>('question');
   const [text, setText] = useState('');
   const [image, setImage] = useState<string>();
+  const [busy, setBusy] = useState(false);
 
   async function pick() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 });
@@ -45,9 +46,17 @@ export default function NewPost() {
         title={t('publish')}
         icon="paper-plane"
         disabled={!text.trim()}
-        onPress={() => {
-          addPost({ type, text: text.trim(), imageUri: image });
-          router.back();
+        loading={busy}
+        onPress={async () => {
+          setBusy(true);
+          try {
+            await addPost({ type, text: text.trim(), imageUri: image });
+            router.back();
+          } catch {
+            Alert.alert(t('error'));
+          } finally {
+            setBusy(false);
+          }
         }}
       />
     </Screen>

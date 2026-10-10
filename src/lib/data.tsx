@@ -5,7 +5,9 @@ import { plantById } from '@/data/plants';
 import { useAuth } from './auth';
 import { useI18n } from './i18n';
 import { cancelNotification, ensureNotificationPermission, scheduleCareNotification } from './notifications';
+import { createComment, createPost, fetchPosts, setLike } from './community';
 import { pullUserData, pushUserData, syncEnabled } from './sync';
+import { supabase, uploadPhoto } from './supabase';
 import { readJSON, removeKey, uid, writeJSON } from './storage';
 import { TKey } from './translations';
 
@@ -127,9 +129,10 @@ type DataValue = UserData & {
   removeJournal: (id: string) => void;
   setChat: (messages: ChatMessage[]) => void;
   setGuideProgress: (guideId: string, step: number) => void;
-  addPost: (p: Pick<Post, 'type' | 'text' | 'imageUri'>) => void;
+  addPost: (p: Pick<Post, 'type' | 'text' | 'imageUri'>) => Promise<void>;
   toggleLike: (postId: string) => void;
-  addComment: (postId: string, text: string) => void;
+  addComment: (postId: string, text: string) => Promise<void>;
+  refreshPosts: () => Promise<void>;
   syncNow: () => Promise<boolean>;
   wipe: () => Promise<void>;
 };
@@ -145,35 +148,71 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const prevUser = useRef<string | null>(null);
 
+  const [reschedule, setReschedule] = useState(false);
+  const userId = user?.id;
+  const cloud = !!supabase && !!userId && userId !== 'guest';
+
   // Load per-user data whenever the signed-in user changes.
   useEffect(() => {
     const from = prevUser.current;
-    prevUser.current = user?.id ?? null;
+    prevUser.current = userId ?? null;
     loadedFor.current = null;
     (async () => {
-      if (!user) return setData(EMPTY);
-      let d = await readJSON<UserData>(userKey(user.id), EMPTY);
+      if (!userId) return setData(EMPTY);
+      let d = await readJSON<UserData>(userKey(userId), EMPTY);
       // A guest who registers keeps what they created while exploring.
-      if (from === 'guest' && user.id !== 'guest' && !d.updatedAt) {
+      if (from === 'guest' && userId !== 'guest' && !d.updatedAt) {
         const guest = await readJSON<UserData>(userKey('guest'), EMPTY);
         if (guest.updatedAt) {
           d = guest;
           await removeKey(userKey('guest'));
         }
       }
+      // Signed in with Supabase: take the cloud copy if another device saved something newer.
+      if (supabase && userId !== 'guest') {
+        try {
+          const remote = await pullUserData<UserData>(userId);
+          if (remote && remote.updatedAt > (d.updatedAt ?? 0)) {
+            d.reminders?.forEach((r) => cancelNotification(r.notificationId));
+            // Notification ids belong to the device that scheduled them.
+            d = { ...remote, reminders: (remote.reminders ?? []).map((r) => ({ ...r, notificationId: undefined })) };
+            setReschedule(true);
+          }
+          d = { ...d, lastSynced: Date.now() };
+        } catch {
+          // offline — keep the local copy and sync later
+        }
+      }
       setData({ ...EMPTY, ...d });
-      loadedFor.current = user.id;
+      loadedFor.current = userId;
     })();
-  }, [user]);
+  }, [userId]);
+
+  const refreshPosts = useCallback(async () => {
+    if (!supabase) return;
+    try {
+      setPosts(await fetchPosts());
+    } catch {
+      // keep what we have
+    }
+  }, []);
 
   useEffect(() => {
-    readJSON<Post[] | null>(POSTS_KEY, null).then((p) => setPosts(p ?? SEED_POSTS));
+    if (supabase) fetchPosts().then(setPosts, () => {});
+    else readJSON<Post[] | null>(POSTS_KEY, null).then((p) => setPosts(p ?? SEED_POSTS));
   }, []);
 
   // Persist on change (only after the user's data has been loaded, to avoid clobbering).
   useEffect(() => {
-    if (user && loadedFor.current === user.id) writeJSON(userKey(user.id), data);
-  }, [data, user]);
+    if (!userId || loadedFor.current !== userId) return;
+    writeJSON(userKey(userId), data);
+    if (!cloud || !data.updatedAt) return;
+    // Push to the cloud shortly after the last change.
+    const id = setTimeout(() => {
+      pushUserData(userId, data).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(id);
+  }, [data, userId, cloud]);
 
   const update = useCallback((fn: (d: UserData) => UserData) => {
     setData((d) => ({ ...fn(d), updatedAt: Date.now() }));
@@ -209,6 +248,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [t, plantName],
   );
 
+  // Reminders that arrived from another device get scheduled on this one.
+  useEffect(() => {
+    if (!reschedule) return;
+    (async () => {
+      setReschedule(false);
+      const ids = new Map<string, string | undefined>();
+      for (const r of data.reminders) ids.set(r.id, await schedule(r));
+      setData((d) => ({ ...d, reminders: d.reminders.map((r) => (ids.has(r.id) ? { ...r, notificationId: ids.get(r.id) } : r)) }));
+    })();
+  }, [reschedule, data.reminders, schedule]);
+
+  // Upload a local photo in the background and swap in its cloud URL.
+  const syncPhoto = useCallback(
+    (uri: string | undefined, apply: (url: string) => void) => {
+      if (!cloud || !uri || !userId) return;
+      uploadPhoto(uri, userId)
+        .then((url) => url && url !== uri && apply(url))
+        .catch(() => {});
+    },
+    [cloud, userId],
+  );
+
   const value = useMemo<DataValue>(
     () => ({
       ...data,
@@ -216,6 +277,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPlant: (p) => {
         const plant: GardenPlant = { ...p, id: uid(), createdAt: Date.now() };
         update((d) => ({ ...d, plants: [plant, ...d.plants] }));
+        syncPhoto(plant.photoUri, (url) => update((d) => ({ ...d, plants: d.plants.map((x) => (x.id === plant.id ? { ...x, photoUri: url } : x)) })));
         return plant;
       },
       removePlant: (id) => {
@@ -244,13 +306,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
         cancelNotification(data.reminders.find((x) => x.id === id)?.notificationId);
         update((d) => ({ ...d, reminders: d.reminders.filter((r) => r.id !== id) }));
       },
-      addJournal: (e) => update((d) => ({ ...d, journal: [{ ...e, id: uid(), at: Date.now() }, ...d.journal] })),
+      addJournal: (e) => {
+        const entry: JournalEntry = { ...e, id: uid(), at: Date.now() };
+        update((d) => ({ ...d, journal: [entry, ...d.journal] }));
+        syncPhoto(entry.photoUri, (url) => update((d) => ({ ...d, journal: d.journal.map((x) => (x.id === entry.id ? { ...x, photoUri: url } : x)) })));
+      },
       removeJournal: (id) => update((d) => ({ ...d, journal: d.journal.filter((j) => j.id !== id) })),
       setChat: (chat) => update((d) => ({ ...d, chat })),
       setGuideProgress: (guideId, step) =>
         update((d) => ({ ...d, guideProgress: { ...d.guideProgress, [guideId]: Math.max(step, d.guideProgress[guideId] ?? 0) } })),
-      addPost: (p) => {
+      refreshPosts,
+      addPost: async (p) => {
         if (!user) return;
+        if (cloud) {
+          const imageUrl = await uploadPhoto(p.imageUri, user.id);
+          await createPost({ authorId: user.id, authorName: user.name || t('guest'), type: p.type, text: p.text, imageUrl });
+          return refreshPosts();
+        }
         savePosts((list) => [
           { ...p, id: uid(), authorId: user.id, authorName: user.name || t('guest'), likes: [], comments: [], at: Date.now() },
           ...list,
@@ -258,14 +330,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
       toggleLike: (postId) => {
         if (!user) return;
+        if (cloud) {
+          const liked = !posts.find((p) => p.id === postId)?.likes.includes(user.id);
+          // Optimistic update, then confirm with the server.
+          setPosts((list) => list.map((p) => (p.id !== postId ? p : { ...p, likes: liked ? [...p.likes, user.id] : p.likes.filter((x) => x !== user.id) })));
+          setLike(postId, user.id, liked).catch(refreshPosts);
+          return;
+        }
         savePosts((list) =>
           list.map((p) =>
             p.id !== postId ? p : { ...p, likes: p.likes.includes(user.id) ? p.likes.filter((x) => x !== user.id) : [...p.likes, user.id] },
           ),
         );
       },
-      addComment: (postId, text) => {
+      addComment: async (postId, text) => {
         if (!user) return;
+        if (cloud) {
+          await createComment(postId, user.id, user.name || t('guest'), text);
+          return refreshPosts();
+        }
         savePosts((list) =>
           list.map((p) =>
             p.id !== postId
@@ -275,10 +358,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
       },
       syncNow: async () => {
-        if (!user || !syncEnabled) return false;
-        const remote = await pullUserData<UserData>(user.id, user.id);
+        if (!user || !syncEnabled || !cloud) return false;
+        const remote = await pullUserData<UserData>(user.id);
         const merged = remote && remote.updatedAt > data.updatedAt ? remote : data;
-        await pushUserData(user.id, merged, user.id);
+        await pushUserData(user.id, merged);
         setData({ ...merged, lastSynced: Date.now() });
         return true;
       },
@@ -286,10 +369,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!user) return;
         data.reminders.forEach((r) => cancelNotification(r.notificationId));
         await removeKey(userKey(user.id));
+        if (cloud) await supabase!.from('user_data').delete().eq('user_id', user.id);
         setData(EMPTY);
       },
     }),
-    [data, posts, update, savePosts, schedule, user, t],
+    [data, posts, update, savePosts, schedule, user, t, cloud, refreshPosts, syncPhoto],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

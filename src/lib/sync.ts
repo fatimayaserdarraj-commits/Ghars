@@ -1,29 +1,25 @@
-/**
- * Optional multi-device sync. Point EXPO_PUBLIC_SYNC_URL at any REST endpoint that
- * stores a JSON document per user (GET/PUT {url}/users/{id}). Last write wins.
- */
-const SYNC_URL = process.env.EXPO_PUBLIC_SYNC_URL;
+import { supabase } from './supabase';
 
-export const syncEnabled = !!SYNC_URL;
+/**
+ * Multi-device sync through Supabase: one JSON document per user in the `user_data` table
+ * (protected by row-level security so each user can only read and write their own row).
+ * Newest `updatedAt` wins.
+ */
+export const syncEnabled = !!supabase;
 
 export type Syncable = { updatedAt: number };
 
-export async function pushUserData<T extends Syncable>(userId: string, data: T, token: string) {
-  if (!SYNC_URL) throw new Error('sync not configured');
-  const res = await fetch(`${SYNC_URL}/users/${encodeURIComponent(userId)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`sync failed: ${res.status}`);
+export async function pushUserData<T extends Syncable>(userId: string, data: T) {
+  if (!supabase) throw new Error('sync not configured');
+  const { error } = await supabase
+    .from('user_data')
+    .upsert({ user_id: userId, data, updated_at: new Date(data.updatedAt || Date.now()).toISOString() });
+  if (error) throw error;
 }
 
-export async function pullUserData<T extends Syncable>(userId: string, token: string): Promise<T | null> {
-  if (!SYNC_URL) return null;
-  const res = await fetch(`${SYNC_URL}/users/${encodeURIComponent(userId)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`sync failed: ${res.status}`);
-  return (await res.json()) as T;
+export async function pullUserData<T extends Syncable>(userId: string): Promise<T | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('user_data').select('data').eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return (data?.data as T) ?? null;
 }

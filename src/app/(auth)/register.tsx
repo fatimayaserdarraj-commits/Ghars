@@ -1,6 +1,6 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { AuthShell } from '@/components/auth-shell';
 import { AppText, GradientButton, Input, ProgressBar, Row } from '@/components/ui';
@@ -37,6 +37,10 @@ export default function Register() {
     setLoading(true);
     const err = await register(form.name, form.email, form.password);
     setLoading(false);
+    if (err === 'errConfirmEmail') {
+      Alert.alert(t('registerTitle'), t('errConfirmEmail'));
+      return router.replace('/login');
+    }
     if (err) return setErrors({ email: err });
     router.replace('/(tabs)');
   }

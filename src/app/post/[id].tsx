@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PostCard, useTimeAgo } from '@/components/post-card';
@@ -57,7 +57,7 @@ export default function PostDetail() {
             <PressableScale
               disabled={!text.trim()}
               onPress={() => {
-                addComment(post.id, text.trim());
+                addComment(post.id, text.trim()).catch(() => Alert.alert(t('error')));
                 setText('');
               }}>
               <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>

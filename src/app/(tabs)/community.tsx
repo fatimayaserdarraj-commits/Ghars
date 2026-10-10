@@ -1,9 +1,9 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { POST_TYPES, PostCard } from '@/components/post-card';
-import { Appear, Chip, GradientButton, Header, Row, Screen } from '@/components/ui';
+import { Appear, Chip, EmptyState, GradientButton, Header, Row, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { PostType, useData } from '@/lib/data';
 import { useI18n } from '@/lib/i18n';
@@ -12,7 +12,12 @@ import { space } from '@/theme';
 export default function Community() {
   const { t } = useI18n();
   const { isGuest } = useAuth();
-  const { posts } = useData();
+  const { posts, refreshPosts } = useData();
+  useFocusEffect(
+    useCallback(() => {
+      refreshPosts();
+    }, [refreshPosts]),
+  );
   const [filter, setFilter] = useState<PostType | 'all'>('all');
   const visible = filter === 'all' ? posts : posts.filter((p) => p.type === filter);
 
@@ -30,6 +35,7 @@ export default function Community() {
           <Chip key={k} emoji={POST_TYPES[k].emoji} label={t(k)} active={filter === k} onPress={() => setFilter(k)} />
         ))}
       </Row>
+      {visible.length === 0 && <EmptyState emoji="🌱" text={t('postPlaceholder')} />}
       <View style={{ gap: space.md }}>
         {visible.map((p, i) => (
           <Appear key={p.id} index={i}>

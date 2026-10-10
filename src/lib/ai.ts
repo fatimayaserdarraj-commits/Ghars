@@ -3,6 +3,7 @@ import { PLANTS, PlantInfo } from '@/data/plants';
 import { currentSeason } from '@/data/seasons';
 
 import type { ChatMessage } from './data';
+import { supabase, supabaseAnonKey } from './supabase';
 import { Lang } from './translations';
 
 /**
@@ -13,7 +14,12 @@ import { Lang } from './translations';
  * through your own backend proxy and set EXPO_PUBLIC_AI_PROXY_URL instead.
  */
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-const PROXY_URL = process.env.EXPO_PUBLIC_AI_PROXY_URL;
+// With Supabase connected, the `ai` Edge Function (supabase/functions/ai) is used by default.
+const PROXY_URL =
+  process.env.EXPO_PUBLIC_AI_PROXY_URL ||
+  (process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_AI === 'true'
+    ? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ai`
+    : undefined);
 const MODEL = process.env.EXPO_PUBLIC_ANTHROPIC_MODEL || 'claude-sonnet-5-5';
 
 export const aiOnline = !!(API_KEY || PROXY_URL);
@@ -51,7 +57,13 @@ type Block =
 async function callClaude(system: string, messages: { role: 'user' | 'assistant'; content: string | Block[] }[], maxTokens = 1024) {
   const url = PROXY_URL || 'https://api.anthropic.com/v1/messages';
   const headers: Record<string, string> = { 'content-type': 'application/json', 'anthropic-version': '2023-06-01' };
-  if (!PROXY_URL && API_KEY) {
+  if (PROXY_URL && supabase) {
+    // The Edge Function only serves signed-in users; guests fall back to the offline knowledge base.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw new Error('sign-in required for AI');
+    headers.Authorization = `Bearer ${data.session.access_token}`;
+    if (supabaseAnonKey) headers.apikey = supabaseAnonKey;
+  } else if (!PROXY_URL && API_KEY) {
     headers['x-api-key'] = API_KEY;
     headers['anthropic-dangerous-direct-browser-access'] = 'true';
   }
@@ -109,35 +121,39 @@ const imageBlock = (base64: string, mime = 'image/jpeg'): Block => ({
 
 export async function identifyPlant(base64: string | undefined, seed: string, lang: Lang): Promise<Identification> {
   if (aiOnline && base64) {
-    const ids = PLANTS.map((p) => p.id).join(', ');
-    const text = await callClaude(
-      `You are an expert botanist for a gardening app used in the Arabian Gulf. Identify the plant in the photo. ` +
-        `Reply ONLY with JSON: {"match_id": one of [${ids}] or null, "emoji": string, "common_name": string, "scientific_name": string, ` +
-        `"family": string, "confidence": number 0-1, "description": string (2 sentences), "care": {"water","light","soil","temperature","fertilizer","humidity"} ` +
-        `(each one practical sentence adapted to a hot, dry climate)}. Write all text values in ${langName(lang)}.`,
-      [{ role: 'user', content: [imageBlock(base64), { type: 'text', text: 'Identify this plant.' }] }],
-    );
-    const r = parseJSON<{
-      match_id: string | null;
-      emoji: string;
-      common_name: string;
-      scientific_name: string;
-      family: string;
-      confidence: number;
-      description: string;
-      care: CareSheet;
-    }>(text);
-    return {
-      matchId: PLANTS.some((p) => p.id === r.match_id) ? r.match_id : null,
-      emoji: r.emoji || '🌿',
-      name: r.common_name,
-      scientific: r.scientific_name,
-      family: r.family,
-      description: r.description,
-      confidence: r.confidence,
-      care: r.care,
-      demo: false,
-    };
+    try {
+      const ids = PLANTS.map((p) => p.id).join(', ');
+      const text = await callClaude(
+        `You are an expert botanist for a gardening app used in the Arabian Gulf. Identify the plant in the photo. ` +
+          `Reply ONLY with JSON: {"match_id": one of [${ids}] or null, "emoji": string, "common_name": string, "scientific_name": string, ` +
+          `"family": string, "confidence": number 0-1, "description": string (2 sentences), "care": {"water","light","soil","temperature","fertilizer","humidity"} ` +
+          `(each one practical sentence adapted to a hot, dry climate)}. Write all text values in ${langName(lang)}.`,
+        [{ role: 'user', content: [imageBlock(base64), { type: 'text', text: 'Identify this plant.' }] }],
+      );
+      const r = parseJSON<{
+        match_id: string | null;
+        emoji: string;
+        common_name: string;
+        scientific_name: string;
+        family: string;
+        confidence: number;
+        description: string;
+        care: CareSheet;
+      }>(text);
+      return {
+        matchId: PLANTS.some((p) => p.id === r.match_id) ? r.match_id : null,
+        emoji: r.emoji || '🌿',
+        name: r.common_name,
+        scientific: r.scientific_name,
+        family: r.family,
+        description: r.description,
+        confidence: r.confidence,
+        care: r.care,
+        demo: false,
+      };
+    } catch {
+      // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
+    }
   }
   // Offline demo: deterministic pick from the local database.
   await new Promise((r) => setTimeout(r, 1800));
@@ -148,18 +164,22 @@ export async function identifyPlant(base64: string | undefined, seed: string, la
 
 export async function diagnosePlant(base64: string | undefined, symptoms: string, lang: Lang): Promise<DiagnosisResult> {
   if (aiOnline && (base64 || symptoms.trim())) {
-    const content: Block[] = [];
-    if (base64) content.push(imageBlock(base64));
-    content.push({ type: 'text', text: `Symptoms reported by the user: ${symptoms || 'none given'}` });
-    const text = await callClaude(
-      `You are a plant pathologist for a gardening app in the Arabian Gulf. Diagnose plant health from the photo and symptoms. ` +
-        `Consider pests, diseases and nutritional deficiencies (and heat/salt stress). Reply ONLY with JSON: ` +
-        `{"category": "pest"|"disease"|"nutrient"|"healthy", "emoji": string, "name": string, "severity": number 0-1, "confidence": number 0-1, ` +
-        `"causes": string, "treatment": string[] (3 steps), "prevention": string[] (2-3 tips)}. Write all text values in ${langName(lang)}.`,
-      [{ role: 'user', content }],
-    );
-    const r = parseJSON<Omit<DiagnosisResult, 'demo'>>(text);
-    return { ...r, demo: false };
+    try {
+      const content: Block[] = [];
+      if (base64) content.push(imageBlock(base64));
+      content.push({ type: 'text', text: `Symptoms reported by the user: ${symptoms || 'none given'}` });
+      const text = await callClaude(
+        `You are a plant pathologist for a gardening app in the Arabian Gulf. Diagnose plant health from the photo and symptoms. ` +
+          `Consider pests, diseases and nutritional deficiencies (and heat/salt stress). Reply ONLY with JSON: ` +
+          `{"category": "pest"|"disease"|"nutrient"|"healthy", "emoji": string, "name": string, "severity": number 0-1, "confidence": number 0-1, ` +
+          `"causes": string, "treatment": string[] (3 steps), "prevention": string[] (2-3 tips)}. Write all text values in ${langName(lang)}.`,
+        [{ role: 'user', content }],
+      );
+      const r = parseJSON<Omit<DiagnosisResult, 'demo'>>(text);
+      return { ...r, demo: false };
+    } catch {
+      // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
+    }
   }
   await new Promise((r) => setTimeout(r, 1800));
   const { diagnosis: d, confidence } = matchDiagnosis(symptoms);
@@ -179,13 +199,17 @@ export async function diagnosePlant(base64: string | undefined, symptoms: string
 export async function chatReply(history: ChatMessage[], gardenSummary: string, lang: Lang): Promise<string> {
   const season = currentSeason();
   if (aiOnline) {
-    const system =
-      `You are the MPS Garden assistant: a warm, expert gardener helping users in Bahrain and the Gulf. ` +
-      `Current season: ${season.id} (${season.climate.en}). The user's garden: ${gardenSummary || 'no plants yet'}. ` +
-      `Give personalised, practical, concise advice (short paragraphs or bullet points). Cover pests, diseases and nutrient issues when relevant, ` +
-      `with treatment and prevention. Reply in ${langName(lang)} unless the user writes in another language.`;
-    const messages = history.slice(-16).map((m) => ({ role: m.role, content: m.text }));
-    return callClaude(system, messages, 800);
+    try {
+      const system =
+        `You are the MPS Garden assistant: a warm, expert gardener helping users in Bahrain and the Gulf. ` +
+        `Current season: ${season.id} (${season.climate.en}). The user's garden: ${gardenSummary || 'no plants yet'}. ` +
+        `Give personalised, practical, concise advice (short paragraphs or bullet points). Cover pests, diseases and nutrient issues when relevant, ` +
+        `with treatment and prevention. Reply in ${langName(lang)} unless the user writes in another language.`;
+      const messages = history.slice(-16).map((m) => ({ role: m.role, content: m.text }));
+      return await callClaude(system, messages, 800);
+    } catch {
+      // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
+    }
   }
   await new Promise((r) => setTimeout(r, 900));
   return offlineReply(history[history.length - 1]?.text ?? '', lang);
