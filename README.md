@@ -25,7 +25,6 @@ feedback and the lesson-complete burst.
 ## Run it
 
 ```bash
-cd mps-app
 npm install
 npx expo start        # then scan the QR code with Expo Go, or press a / i / w
 ```
