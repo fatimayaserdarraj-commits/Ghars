@@ -8,7 +8,8 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 
 import { ConfidenceRing, PulseRings, ScanFrame } from '@/components/animated';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconBubble, Input, PressableScale, ProgressBar, Row, Screen, Segmented } from '@/components/ui';
-import { aiOnline, CareSheet, identifyOnline, diagnosePlant, DiagnosisResult, identifyPlant, Identification } from '@/lib/ai';
+import { aiOnline, CareSheet, diagnosePlant, DiagnosisResult, IdentifyError, identifyOnline, identifyPlant, Identification, manualIdentification } from '@/lib/ai';
+import { PLANTS } from '@/data/plants';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, GradientName, space } from '@/theme';
@@ -41,6 +42,7 @@ export default function Scan() {
   const [busy, setBusy] = useState(false);
   const [plant, setPlant] = useState<Identification | null>(null);
   const [diag, setDiag] = useState<DiagnosisResult | null>(null);
+  const [failure, setFailure] = useState<IdentifyError['reason'] | null>(null);
 
   // Follow mode changes requested by deep links (e.g. Home → Diagnose).
   const [paramMode, setParamMode] = useState(params.mode);
@@ -51,6 +53,7 @@ export default function Scan() {
 
   function reset() {
     setPhoto(null);
+    setFailure(null);
     setPlant(null);
     setDiag(null);
     setSymptoms('');
@@ -70,6 +73,7 @@ export default function Scan() {
     const asset = res.assets[0];
     const p = { uri: asset.uri, base64: asset.base64 ?? undefined };
     setPhoto(p);
+    setFailure(null);
     setPlant(null);
     setDiag(null);
     if (mode === 'identify') run(p);
@@ -84,14 +88,15 @@ export default function Scan() {
       } else {
         setDiag(await diagnosePlant(p?.base64, symptoms, lang));
       }
-    } catch {
-      Alert.alert(t('error'));
+    } catch (e) {
+      if (e instanceof IdentifyError) setFailure(e.reason);
+      else Alert.alert(t('error'));
     } finally {
       setBusy(false);
     }
   }
 
-  const hasResult = !!plant || !!diag;
+  const hasResult = !!plant || !!diag || !!failure;
 
   return (
     <Screen tabBar header={<Header back={false} title={t('scanTitle')} subtitle={t('scanSubtitle')} />}>
@@ -164,9 +169,53 @@ export default function Scan() {
         </Animated.View>
       )}
 
+      {failure && !plant && (
+        <IdentifyFailure
+          reason={failure}
+          onPick={(id) => setPlant(manualIdentification(id, lang))}
+          onReset={reset}
+        />
+      )}
       {plant && <PlantResult r={plant} photo={photo} onReset={reset} />}
       {diag && <DiagnosisCard r={diag} onReset={reset} />}
     </Screen>
+  );
+}
+
+function IdentifyFailure({ reason, onPick, onReset }: { reason: IdentifyError['reason']; onPick: (id: string) => void; onReset: () => void }) {
+  const { t, l } = useI18n();
+  const copy = {
+    offline: { title: t('idOfflineTitle'), body: t('idOfflineBody'), emoji: '🔌' },
+    notFound: { title: t('idNotFoundTitle'), body: t('idNotFoundBody'), emoji: '🔍' },
+    failed: { title: t('idFailedTitle'), body: t('idFailedBody'), emoji: '⚠️' },
+  }[reason];
+  return (
+    <Animated.View entering={FadeInUp.springify().damping(15)} style={{ gap: space.lg }}>
+      <GlassCard>
+        <Row gap={space.md} align="flex-start">
+          <Text style={{ fontSize: 30 }}>{copy.emoji}</Text>
+          <View style={{ flex: 1, gap: 4 }}>
+            <AppText variant="h2">{copy.title}</AppText>
+            <AppText variant="caption">{copy.body}</AppText>
+          </View>
+        </Row>
+      </GlassCard>
+      <AppText variant="h2">{t('chooseYourself')}</AppText>
+      <Row wrap gap={space.sm}>
+        {PLANTS.map((p) => (
+          <PressableScale
+            key={p.id}
+            onPress={() => onPick(p.id)}
+            style={{ width: '31%', flexGrow: 1, paddingVertical: 12, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+            <Text style={{ fontSize: 28 }}>{p.emoji}</Text>
+            <AppText variant="caption" center numberOfLines={1} color={colors.text} style={{ fontWeight: '700', marginTop: 4 }}>
+              {l(p.name)}
+            </AppText>
+          </PressableScale>
+        ))}
+      </Row>
+      <GhostButton title={t('scanAgain')} icon="refresh" onPress={onReset} />
+    </Animated.View>
   );
 }
 
@@ -185,10 +234,14 @@ function PlantResult({ r, photo, onReset }: { r: Identification; photo: Photo | 
               </AppText>
               <Badge text={`${t('family')}: ${r.family}`} color={colors.lime} />
             </View>
-            <View style={{ alignItems: 'center', gap: 6 }}>
-              <ConfidenceRing value={r.confidence} />
-              <AppText variant="label">{t('confidence')}</AppText>
-            </View>
+            {r.demo ? (
+              <Badge text={`✋ ${t('chosenByYou')}`} color={colors.sky} />
+            ) : (
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <ConfidenceRing value={r.confidence} />
+                <AppText variant="label">{t('confidence')}</AppText>
+              </View>
+            )}
           </Row>
           <AppText style={{ marginTop: space.md }} color={colors.textDim}>
             {r.description}

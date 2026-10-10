@@ -209,26 +209,47 @@ async function identifyViaPlantNet(uri: string, lang: Lang): Promise<Identificat
   }
 }
 
-export async function identifyPlant(base64: string | undefined, seed: string, lang: Lang): Promise<Identification> {
+/** Why a photo could not be identified. `offline` = no recognition service is configured. */
+export class IdentifyError extends Error {
+  constructor(public reason: 'offline' | 'notFound' | 'failed') {
+    super(`identification ${reason}`);
+  }
+}
+
+/** Care details for a plant the user picked themselves from the built-in list. */
+export function manualIdentification(plantId: string, lang: Lang): Identification | null {
+  const p = PLANTS.find((x) => x.id === plantId);
+  return p ? fromPlant(p, lang, 1, true) : null;
+}
+
+/** Identify a photo with the configured services. Never guesses: throws IdentifyError when it can't tell. */
+export async function identifyPlant(base64: string | undefined, uri: string, lang: Lang): Promise<Identification> {
+  let tried = false;
+  let notFound = false;
   if (plantnetEnabled) {
+    tried = true;
     try {
-      const r = await identifyViaPlantNet(seed, lang);
+      const r = await identifyViaPlantNet(uri, lang);
       if (r) return r;
+      notFound = true;
     } catch {
       // fall through to the next provider
     }
   }
   if (aiOnline && base64) {
+    tried = true;
     try {
       const ids = PLANTS.map((p) => p.id).join(', ');
       const text = await callClaude(
         `You are an expert botanist for a gardening app used in the Arabian Gulf. Identify the plant in the photo. ` +
           `Reply ONLY with JSON: {"match_id": one of [${ids}] or null, "emoji": string, "common_name": string, "scientific_name": string, ` +
           `"family": string, "confidence": number 0-1, "description": string (2 sentences), "care": {"water","light","soil","temperature","fertilizer","humidity"} ` +
-          `(each one practical sentence adapted to a hot, dry climate)}. Write all text values in ${langName(lang)}.`,
+          `(each one practical sentence adapted to a hot, dry climate)}. Identify what is actually in the photo — never default to a plant from the list. ` +
+          `If there is no plant in the photo, reply {"no_plant": true}. Write all text values in ${langName(lang)}.`,
         [{ role: 'user', content: [imageBlock(base64), { type: 'text', text: 'Identify this plant.' }] }],
       );
       const r = parseJSON<{
+        no_plant?: boolean;
         match_id: string | null;
         emoji: string;
         common_name: string;
@@ -238,6 +259,10 @@ export async function identifyPlant(base64: string | undefined, seed: string, la
         description: string;
         care: CareSheet;
       }>(text);
+      if (r.no_plant) {
+        notFound = true;
+        throw new Error('no plant');
+      }
       return {
         matchId: PLANTS.some((p) => p.id === r.match_id) ? r.match_id : null,
         emoji: r.emoji || '🌿',
@@ -253,11 +278,7 @@ export async function identifyPlant(base64: string | undefined, seed: string, la
       // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
     }
   }
-  // Offline demo: deterministic pick from the local database.
-  await new Promise((r) => setTimeout(r, 1800));
-  const hash = [...seed].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-  const plant = PLANTS[hash % PLANTS.length];
-  return fromPlant(plant, lang, 0.78 + (hash % 18) / 100, true);
+  throw new IdentifyError(!tried ? 'offline' : notFound ? 'notFound' : 'failed');
 }
 
 export async function diagnosePlant(base64: string | undefined, symptoms: string, lang: Lang): Promise<DiagnosisResult> {
