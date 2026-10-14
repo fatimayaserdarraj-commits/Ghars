@@ -4,7 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
-const URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+// Accept common copy-paste variants: trailing slashes, quotes, or the REST endpoint (".../rest/v1/").
+const URL = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim()
+  .replace(/^["']|["']$/g, '')
+  .replace(/\/(rest|auth)\/v1\/?$/, '')
+  .replace(/\/+$/, '');
 const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 /** True when the app is connected to a Supabase project (see README → "Connect Supabase"). */
