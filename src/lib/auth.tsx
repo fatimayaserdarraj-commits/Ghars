@@ -25,6 +25,7 @@ type AuthError =
   | 'errEmailSend'
   | 'errPassword'
   | 'errEmail'
+  | 'errCode'
   | 'errAuthUnknown';
 
 type AuthValue = {
@@ -37,6 +38,10 @@ type AuthValue = {
   logout: () => Promise<void>;
   /** Email a password-reset link. Only available with Supabase. */
   resetPassword: (email: string) => Promise<'sent' | 'unavailable' | 'error'>;
+  /** Confirm a new account with the code from the sign-up email. Only with Supabase. */
+  verifyEmail: (email: string, code: string) => Promise<AuthError | null>;
+  /** Send a fresh sign-up code. */
+  resendCode: (email: string) => Promise<AuthError | null>;
 };
 
 const ACCOUNTS_KEY = 'mps.accounts';
@@ -81,6 +86,7 @@ function supabaseError(message: string): AuthError {
   if (m.includes('already registered') || m.includes('already exists')) return 'errExists';
   if (m.includes('not confirmed')) return 'errConfirmEmail';
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'errCredentials';
+  if (m.includes('token') && (m.includes('expired') || m.includes('invalid'))) return 'errCode';
   if (m.includes('sending') && m.includes('email')) return 'errEmailSend';
   if (m.includes('rate limit') || m.includes('too many')) return 'errLocked';
   if (m.includes('api key') || m.includes('apikey') || m.includes('jwt') || m.includes('invalid authentication')) return 'errConfig';
@@ -210,9 +216,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? ('error' as const) : ('sent' as const);
   }, []);
 
+  const verifyEmail = useCallback(async (email: string, code: string) => {
+    if (!supabase) return 'errConfig' as const;
+    const normalized = email.trim().toLowerCase();
+    // 'email' is the current OTP type; older projects still issue sign-up codes as 'signup'.
+    let res = await guarded(() => supabase!.auth.verifyOtp({ email: normalized, token: code, type: 'email' }));
+    if (!('thrown' in res) && res.error) res = await guarded(() => supabase!.auth.verifyOtp({ email: normalized, token: code, type: 'signup' }));
+    if ('thrown' in res) return res.thrown;
+    if (res.error || !res.data.session) return supabaseError(res.error?.message ?? 'Token has expired or is invalid');
+    await secure.remove(SESSION_KEY);
+    setUser(fromSupabase(res.data.session.user));
+    return null;
+  }, []);
+
+  const resendCode = useCallback(async (email: string) => {
+    if (!supabase) return 'errConfig' as const;
+    const res = await guarded(() => supabase!.auth.resend({ type: 'signup', email: email.trim().toLowerCase() }));
+    if ('thrown' in res) return res.thrown;
+    return res.error ? supabaseError(res.error.message) : null;
+  }, []);
+
   const value = useMemo<AuthValue>(
-    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword }),
-    [user, ready, register, login, continueAsGuest, logout, resetPassword],
+    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode }),
+    [user, ready, register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

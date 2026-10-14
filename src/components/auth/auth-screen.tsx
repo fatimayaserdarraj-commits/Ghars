@@ -42,7 +42,7 @@ const STRENGTH: { key: TKey; color: string }[] = [
 /** Combined, animated sign-in / sign-up screen. */
 export function AuthScreen({ initialMode }: { initialMode: Mode }) {
   const { t, isRTL } = useI18n();
-  const { login, register, resetPassword, continueAsGuest, user } = useAuth();
+  const { login, register, resetPassword, resendCode, continueAsGuest, user } = useAuth();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
@@ -113,8 +113,19 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
     const err = mode === 'login' ? await login(form.email, form.password) : await register(form.name, form.email, form.password);
     if (err === 'errConfirmEmail') {
       setState('idle');
-      Alert.alert(t('registerTitle'), t('errConfirmEmail'));
-      return switchMode('login');
+      const email = form.email.trim().toLowerCase();
+      // Sign-up sent a code already; a login attempt means the user never entered it.
+      if (mode === 'register') return router.push({ pathname: '/verify', params: { email } });
+      return Alert.alert(t('verifyTitle'), t('notConfirmed'), [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('enterCode'),
+          onPress: async () => {
+            await resendCode(email);
+            router.push({ pathname: '/verify', params: { email } });
+          },
+        },
+      ]);
     }
     if (err) return fail(err === 'errExists' ? { email: err } : { form: err }, true);
     setState('success');

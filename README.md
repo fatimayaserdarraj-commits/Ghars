@@ -51,6 +51,18 @@ The free tier is enough.
    Confirm email**.
 5. **Restart the app** with `npx expo start -c` (`-c` clears the cache so the new `.env` is picked up).
 
+### Email verification with a 6-digit code
+
+New accounts are activated with a code sent by email. The app shows a code screen after sign-up.
+
+1. **Authentication → Sign In / Providers → Email**: turn **Confirm email** on. Check that **Email OTP Length** is
+   **6**.
+2. **Authentication → Emails → Templates → Confirm sign up**: set the subject to `Your MPS Garden code: {{ .Token }}`,
+   then paste [`supabase/email-templates/confirm-signup.html`](supabase/email-templates/confirm-signup.html) into the
+   body. The `{{ .Token }}` part is the code. The default template sends a link instead, so this step is required.
+3. Supabase's built-in email service only sends a few emails per hour and is meant for testing. For real users, connect
+   a free SMTP provider (for example Resend or Brevo) under **Authentication → Emails → SMTP Settings**.
+
 ## Free AI (recommended)
 
 | Service | Powers | Free limit | Get a key |
