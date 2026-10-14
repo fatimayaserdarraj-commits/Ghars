@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloatingLeaves } from '@/components/animated';
 import { LangToggle } from '@/components/lang-toggle';
 import { AppText, IconButton, IconName, PressableScale, Row, ScreenBackground, Segmented } from '@/components/ui';
-import { passwordScore, useAuth, validEmail, validPassword } from '@/lib/auth';
+import { authErrorDetail, passwordScore, useAuth, validEmail, validPassword } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, gradients, radius, space } from '@/theme';
@@ -48,6 +48,8 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState<Partial<Record<Field | 'form', TKey>>>({});
   const [shake, setShake] = useState(0);
+  // Supabase's own error text, shown in small print so problems can be diagnosed.
+  const [detail, setDetail] = useState('');
   const [focus, setFocus] = useState<Field | null>(null);
   const [state, setState] = useState<SubmitState>('idle');
   const emailRef = useRef<TextInput>(null);
@@ -91,8 +93,9 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
     setState('idle');
   }
 
-  function fail(e: Partial<Record<Field | 'form', TKey>>) {
+  function fail(e: Partial<Record<Field | 'form', TKey>>, fromServer = false) {
     setErrors(e);
+    setDetail(fromServer ? authErrorDetail() : '');
     setShake((s) => s + 1);
     setState('idle');
   }
@@ -113,7 +116,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
       Alert.alert(t('registerTitle'), t('errConfirmEmail'));
       return switchMode('login');
     }
-    if (err) return fail(err === 'errExists' ? { email: err } : { form: err });
+    if (err) return fail(err === 'errExists' ? { email: err } : { form: err }, true);
     setState('success');
     setTimeout(() => router.replace('/(tabs)'), 900);
   }
@@ -276,6 +279,11 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
                       {t(errors.form)}
                     </AppText>
                   </Row>
+                  {detail ? (
+                    <AppText variant="caption" style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>
+                      {detail}
+                    </AppText>
+                  ) : null}
                 </Animated.View>
               ) : null}
 

@@ -14,7 +14,18 @@ export type User = {
 
 type StoredAccount = User & { salt: string; hash: string };
 
-type AuthError = 'errExists' | 'errCredentials' | 'errLocked' | 'errConfirmEmail' | 'errNetwork';
+type AuthError =
+  | 'errExists'
+  | 'errCredentials'
+  | 'errLocked'
+  | 'errConfirmEmail'
+  | 'errNetwork'
+  | 'errConfig'
+  | 'errSignupDisabled'
+  | 'errEmailSend'
+  | 'errPassword'
+  | 'errEmail'
+  | 'errAuthUnknown';
 
 type AuthValue = {
   user: User | null;
@@ -60,13 +71,33 @@ const fromSupabase = (u: SupabaseUser): User => ({
   provider: 'email',
 });
 
+let lastDetail = '';
+/** The raw message from the last failed Supabase auth call, shown under the friendly error. */
+export const authErrorDetail = () => lastDetail;
+
 function supabaseError(message: string): AuthError {
+  lastDetail = message;
   const m = message.toLowerCase();
   if (m.includes('already registered') || m.includes('already exists')) return 'errExists';
   if (m.includes('not confirmed')) return 'errConfirmEmail';
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'errCredentials';
+  if (m.includes('sending') && m.includes('email')) return 'errEmailSend';
   if (m.includes('rate limit') || m.includes('too many')) return 'errLocked';
-  return 'errNetwork';
+  if (m.includes('api key') || m.includes('apikey') || m.includes('jwt') || m.includes('invalid authentication')) return 'errConfig';
+  if (m.includes('signups not allowed') || m.includes('signup is disabled')) return 'errSignupDisabled';
+  if (m.includes('password')) return 'errPassword';
+  if (m.includes('email') && m.includes('invalid')) return 'errEmail';
+  if (m.includes('fetch') || m.includes('network') || m.includes('timed out') || m.includes('failed to')) return 'errNetwork';
+  return 'errAuthUnknown';
+}
+
+/** Run a Supabase auth call, turning thrown network errors into an AuthError too. */
+async function guarded<T>(call: () => Promise<T>): Promise<T | { thrown: AuthError }> {
+  try {
+    return await call();
+  } catch (e) {
+    return { thrown: supabaseError(e instanceof Error ? e.message : String(e)) };
+  }
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -103,11 +134,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     if (supabase) {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: { data: { name: name.trim() } },
-      });
+      const res = await guarded(() =>
+        supabase!.auth.signUp({ email: email.trim().toLowerCase(), password, options: { data: { name: name.trim() } } }),
+      );
+      if ('thrown' in res) return res.thrown;
+      const { data, error } = res;
       if (error) return supabaseError(error.message);
       // Supabase returns no session when "Confirm email" is on (an identities-less user means the email is taken).
       if (data.user && data.user.identities?.length === 0) return 'errExists' as const;
@@ -138,7 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     if (Date.now() < lockedUntil) return 'errLocked' as const;
     if (supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      const res = await guarded(() => supabase!.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }));
+      if ('thrown' in res) return res.thrown;
+      const { data, error } = res;
       if (error) return supabaseError(error.message);
       await secure.remove(SESSION_KEY);
       setUser(fromSupabase(data.user));
