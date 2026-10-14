@@ -24,6 +24,8 @@ type AuthValue = {
   login: (email: string, password: string) => Promise<AuthError | null>;
   continueAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
+  /** Email a password-reset link. Only available with Supabase. */
+  resetPassword: (email: string) => Promise<'sent' | 'unavailable' | 'error'>;
 };
 
 const ACCOUNTS_KEY = 'mps.accounts';
@@ -169,9 +171,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    if (!supabase) return 'unavailable' as const;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    return error ? ('error' as const) : ('sent' as const);
+  }, []);
+
   const value = useMemo<AuthValue>(
-    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout }),
-    [user, ready, register, login, continueAsGuest, logout],
+    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword }),
+    [user, ready, register, login, continueAsGuest, logout, resetPassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
