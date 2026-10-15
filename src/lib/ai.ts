@@ -18,7 +18,9 @@ import { Lang } from './translations';
  * so the risk is someone using up your daily quota, not your money.
  */
 const GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.EXPO_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
+// Google renames and retires models; try the configured one, then Google's always-current Flash alias.
+const GEMINI_MODELS = [...new Set([process.env.EXPO_PUBLIC_GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash'].filter(Boolean) as string[])];
+let geminiModel = GEMINI_MODELS[0];
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 // With Supabase connected, the `ai` Edge Function (supabase/functions/ai) is used by default.
 const PROXY_URL =
@@ -80,16 +82,25 @@ async function callGemini(system: string, messages: Msg[], maxTokens: number) {
         ? [{ text: m.content }]
         : m.content.map((b) => (b.type === 'text' ? { text: b.text } : { inline_data: { mime_type: b.source.media_type, data: b.source.data } })),
   }));
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_KEY! },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents,
-      // Generous limit: "thinking" models spend part of the budget before answering.
-      generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 4096), temperature: 0.4 },
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents,
+    // Generous limit: "thinking" models spend part of the budget before answering.
+    generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 4096), temperature: 0.4 },
   });
+  const request = (model: string) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_KEY! },
+      body,
+    });
+  let res = await request(geminiModel);
+  // 404 = this model name no longer exists; fall back to the next candidate and remember it.
+  for (const next of GEMINI_MODELS) {
+    if (res.status !== 404 || next === geminiModel) continue;
+    res = await request(next);
+    if (res.ok) geminiModel = next;
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     let msg = body;
@@ -341,8 +352,10 @@ export async function chatReply(history: ChatMessage[], gardenSummary: string, l
         `with treatment and prevention. Reply in ${langName(lang)} unless the user writes in another language.`;
       const messages = history.slice(-16).map((m) => ({ role: m.role, content: m.text }));
       return await callClaude(system, messages, 800);
-    } catch {
-      // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
+    } catch (e) {
+      // AI unreachable (offline, signed out or quota): answer from the on-device knowledge base, and say so.
+      const note = lang === 'ar' ? 'إجابة دون اتصال — تعذّر الوصول إلى الذكاء الاصطناعي' : 'Offline answer — the AI could not be reached';
+      return `${offlineReply(history[history.length - 1]?.text ?? '', lang)}\n\n⚠️ ${note}: ${describe(e)}`;
     }
   }
   await new Promise((r) => setTimeout(r, 900));
@@ -350,11 +363,39 @@ export async function chatReply(history: ChatMessage[], gardenSummary: string, l
 }
 
 /** Rule-based fallback assistant built on the local knowledge base. */
+// Generic tags ("flower", "herb", …) would match the wrong plant, so only specific names identify one.
+const GENERIC_TAGS = new Set(['flower', 'herb', 'vegetable', 'fruit', 'tree', 'houseplant', 'indoor', 'succulent', 'leafy', 'salad', 'climber', 'fragrant', 'red', 'cactus', 'palm']);
+
+function findPlant(q: string): PlantInfo | undefined {
+  return PLANTS.find((p) =>
+    [p.id, p.name.en, p.name.ar, p.scientific.split(' ')[0], ...p.tags.filter((t) => !GENERIC_TAGS.has(t))].some((k) => {
+      const key = k.toLowerCase();
+      return key.length > 2 && q.includes(key);
+    }),
+  );
+}
+
+const SYMPTOM = /(yellow|brown|spot|bug|pest|insect|wilt|droop|dying|dry|curl|white|black|sick|disease|rot|leaf|leaves|leves|أصفر|صفراء|اصفرار|بني|بقع|حشر|آف|ذبول|يذبل|جاف|مرض|عفن|ورق|أوراق)/;
+const SEASON_Q = /(what (can|should|to) (i )?(plant|grow|sow)|which plants?|plant (this|now|in)|grow (this|now|in)|this (month|season)|when (to|should i) (plant|sow)|ماذا (أ|ا)زرع|ما(ذا)? يمكن(ني)? (أن )?(أ|ا)زرع|هذا الشهر|هذا الموسم|متى (أ|ا)زرع)/;
+
+/** Rule-based fallback assistant built on the local knowledge base. */
 function offlineReply(question: string, lang: Lang): string {
   const q = question.toLowerCase();
   const season = currentSeason();
 
-  if (/(plant|grow|sow|month|season|ازرع|أزرع|زراعة|موسم|شهر)/.test(q)) {
+  // 1. Symptoms first: "my plant has yellow leaves" is a health question, not a planting one.
+  if (SYMPTOM.test(q)) {
+    const { diagnosis: d } = matchDiagnosis(q);
+    if (d.id !== 'healthy') {
+      const label = lang === 'ar' ? ['قد تكون المشكلة', 'العلاج', 'الوقاية', 'إن لم يتحسن، استخدم الماسح لتشخيص صورة.'] : ['This sounds like', 'Treatment', 'Prevention', 'If it does not improve, use the scanner to diagnose a photo.'];
+      return `${d.emoji} ${label[0]}: ${d.name[lang]}\n${d.causes[lang]}\n\n${label[1]}:\n${d.treatment
+        .map((x) => `• ${x[lang]}`)
+        .join('\n')}\n\n${label[2]}:\n${d.prevention.map((x) => `• ${x[lang]}`).join('\n')}\n\n${label[3]}`;
+    }
+  }
+
+  // 2. Seasonal planting advice only for real "what should I plant" questions.
+  if (SEASON_Q.test(q)) {
     const picks = PLANTS.filter((p) => p.plantIn.includes(season.id)).slice(0, 6);
     const head =
       lang === 'ar'
@@ -363,24 +404,19 @@ function offlineReply(question: string, lang: Lang): string {
     return `${head}\n${picks.map((p) => `• ${p.emoji} ${p.name[lang]}`).join('\n')}\n\n${season.tips[0][lang]}`;
   }
 
-  const plant = PLANTS.find((p) => p.tags.some((t) => q.includes(t.toLowerCase())));
-  if (plant && !/(yellow|spot|bug|pest|أصفر|اصفرار|بقع|حشر|آف)/.test(q)) {
+  // 3. Care sheet for a plant we actually know.
+  const plant = findPlant(q);
+  if (plant) {
     const c = plant.care;
     return lang === 'ar'
-      ? `${plant.emoji} ${plant.name.ar}\n• الري: ${c.water.ar}\n• الإضاءة: ${c.light.ar}\n• التربة: ${c.soil.ar}\n• التسميد: ${c.fertilizer.ar}`
-      : `${plant.emoji} ${plant.name.en}\n• Water: ${c.water.en}\n• Light: ${c.light.en}\n• Soil: ${c.soil.en}\n• Feeding: ${c.fertilizer.en}`;
+      ? `${plant.emoji} ${plant.name.ar}\n• الري: ${c.water.ar}\n• الإضاءة: ${c.light.ar}\n• التربة: ${c.soil.ar}\n• الحرارة: ${c.temperature.ar}\n• التسميد: ${c.fertilizer.ar}`
+      : `${plant.emoji} ${plant.name.en}\n• Water: ${c.water.en}\n• Light: ${c.light.en}\n• Soil: ${c.soil.en}\n• Temperature: ${c.temperature.en}\n• Feeding: ${c.fertilizer.en}`;
   }
 
-  const { diagnosis: d } = matchDiagnosis(q);
-  if (d.id !== 'healthy') {
-    const label = lang === 'ar' ? ['قد تكون المشكلة', 'العلاج', 'الوقاية'] : ['This sounds like', 'Treatment', 'Prevention'];
-    return `${d.emoji} ${label[0]}: ${d.name[lang]}\n${d.causes[lang]}\n\n${label[1]}:\n${d.treatment
-      .map((x) => `• ${x[lang]}`)
-      .join('\n')}\n\n${label[2]}:\n${d.prevention.map((x) => `• ${x[lang]}`).join('\n')}`;
-  }
-
+  // 4. A plant we don't know: be honest and give general care that suits most plants in the Gulf.
+  const care = genericCare(lang);
   return lang === 'ar'
-    ? `سؤال رائع! لأعطيك نصيحة دقيقة، أخبرني باسم النبتة والأعراض (مثل لون الأوراق أو وجود بقع أو حشرات)، أو استخدم الماسح لتشخيص الصورة. 🌿\n\nنصيحة الموسم: ${season.tips[1].ar}`
-    : `Great question! To give precise advice, tell me the plant and the symptoms (leaf colour, spots, insects…) or use the scanner to diagnose a photo. 🌿\n\nSeasonal tip: ${season.tips[1].en}`;
+    ? `ليست لدي معلومات خاصة بهذه النبتة في قاعدة المعرفة دون اتصال، لكن هذه إرشادات تناسب معظم النباتات في الخليج:\n• الري: ${care.water}\n• الإضاءة: ${care.light}\n• التربة: ${care.soil}\n• التسميد: ${care.fertilizer}\n\nللحصول على إجابة دقيقة، فعّل الذكاء الاصطناعي (Gemini) أو صف الأعراض.`
+    : `I don't have specific notes on that plant in my offline knowledge base, but this works for most plants in the Gulf:\n• Water: ${care.water}\n• Light: ${care.light}\n• Soil: ${care.soil}\n• Feeding: ${care.fertilizer}\n\nFor a precise answer, connect the AI (Gemini) or describe any symptoms.`;
 }
 
