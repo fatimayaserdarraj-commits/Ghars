@@ -90,7 +90,14 @@ async function callGemini(system: string, messages: Msg[], maxTokens: number) {
       generationConfig: { maxOutputTokens: Math.max(maxTokens * 4, 4096), temperature: 0.4 },
     }),
   });
-  if (!res.ok) throw new Error(`Gemini request failed (${res.status})`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    let msg = body;
+    try {
+      msg = JSON.parse(body).error?.message ?? body;
+    } catch {}
+    throw new Error(`Gemini ${res.status}: ${String(msg).slice(0, 160)}`);
+  }
   const json = await res.json();
   const parts = (json.candidates?.[0]?.content?.parts ?? []) as { text?: string }[];
   const text = parts.map((p) => p.text ?? '').join('');
@@ -211,10 +218,17 @@ async function identifyViaPlantNet(uri: string, lang: Lang): Promise<Identificat
 
 /** Why a photo could not be identified. `offline` = no recognition service is configured. */
 export class IdentifyError extends Error {
-  constructor(public reason: 'offline' | 'notFound' | 'failed') {
+  /** `details` holds each provider's own error message, shown in small print to help fix setup problems. */
+  constructor(
+    public reason: 'offline' | 'notFound' | 'failed',
+    public details: string[] = [],
+  ) {
     super(`identification ${reason}`);
   }
 }
+
+const describe = (e: unknown) =>
+  e instanceof Error ? (e.message === 'Failed to fetch' || e.message.includes('Network request failed') ? `${e.message} (blocked or offline)` : e.message) : String(e);
 
 /** Care details for a plant the user picked themselves from the built-in list. */
 export function manualIdentification(plantId: string, lang: Lang): Identification | null {
@@ -226,14 +240,15 @@ export function manualIdentification(plantId: string, lang: Lang): Identificatio
 export async function identifyPlant(base64: string | undefined, uri: string, lang: Lang): Promise<Identification> {
   let tried = false;
   let notFound = false;
+  const details: string[] = [];
   if (plantnetEnabled) {
     tried = true;
     try {
       const r = await identifyViaPlantNet(uri, lang);
       if (r) return r;
       notFound = true;
-    } catch {
-      // fall through to the next provider
+    } catch (e) {
+      details.push(describe(e));
     }
   }
   if (aiOnline && base64) {
@@ -274,11 +289,11 @@ export async function identifyPlant(base64: string | undefined, uri: string, lan
         care: r.care,
         demo: false,
       };
-    } catch {
-      // AI unreachable (offline, signed out or quota) — use the on-device knowledge base.
+    } catch (e) {
+      if (!notFound) details.push(describe(e));
     }
   }
-  throw new IdentifyError(!tried ? 'offline' : notFound ? 'notFound' : 'failed');
+  throw new IdentifyError(!tried ? 'offline' : notFound ? 'notFound' : 'failed', details);
 }
 
 export async function diagnosePlant(base64: string | undefined, symptoms: string, lang: Lang): Promise<DiagnosisResult> {

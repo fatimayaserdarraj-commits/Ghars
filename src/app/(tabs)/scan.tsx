@@ -42,7 +42,7 @@ export default function Scan() {
   const [busy, setBusy] = useState(false);
   const [plant, setPlant] = useState<Identification | null>(null);
   const [diag, setDiag] = useState<DiagnosisResult | null>(null);
-  const [failure, setFailure] = useState<IdentifyError['reason'] | null>(null);
+  const [failure, setFailure] = useState<IdentifyError | null>(null);
 
   // Follow mode changes requested by deep links (e.g. Home → Diagnose).
   const [paramMode, setParamMode] = useState(params.mode);
@@ -89,7 +89,7 @@ export default function Scan() {
         setDiag(await diagnosePlant(p?.base64, symptoms, lang));
       }
     } catch (e) {
-      if (e instanceof IdentifyError) setFailure(e.reason);
+      if (e instanceof IdentifyError) setFailure(e);
       else Alert.alert(t('error'));
     } finally {
       setBusy(false);
@@ -171,7 +171,8 @@ export default function Scan() {
 
       {failure && !plant && (
         <IdentifyFailure
-          reason={failure}
+          reason={failure.reason}
+          details={failure.details}
           onPick={(id) => setPlant(manualIdentification(id, lang))}
           onReset={reset}
         />
@@ -182,7 +183,7 @@ export default function Scan() {
   );
 }
 
-function IdentifyFailure({ reason, onPick, onReset }: { reason: IdentifyError['reason']; onPick: (id: string) => void; onReset: () => void }) {
+function IdentifyFailure({ reason, details, onPick, onReset }: { reason: IdentifyError['reason']; details: string[]; onPick: (id: string) => void; onReset: () => void }) {
   const { t, l } = useI18n();
   const copy = {
     offline: { title: t('idOfflineTitle'), body: t('idOfflineBody'), emoji: '🔌' },
@@ -197,6 +198,11 @@ function IdentifyFailure({ reason, onPick, onReset }: { reason: IdentifyError['r
           <View style={{ flex: 1, gap: 4 }}>
             <AppText variant="h2">{copy.title}</AppText>
             <AppText variant="caption">{copy.body}</AppText>
+            {details.map((d) => (
+              <AppText key={d} variant="caption" style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
+                • {d}
+              </AppText>
+            ))}
           </View>
         </Row>
       </GlassCard>
