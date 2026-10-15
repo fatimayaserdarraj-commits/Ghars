@@ -60,7 +60,7 @@ export function PostCard({ post, full }: { post: Post; full?: boolean }) {
       <GlassCard>
         <Row gap={space.md}>
           <LinearGradient colors={gradients.mint} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontWeight: '900', color: '#05210F' }}>{post.authorName[0]?.toUpperCase()}</Text>
+            <Text style={{ fontWeight: '900', color: '#1C2B22' }}>{post.authorName[0]?.toUpperCase()}</Text>
           </LinearGradient>
           <View style={{ flex: 1 }}>
             <AppText variant="h2">{post.authorName}</AppText>

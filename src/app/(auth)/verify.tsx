@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Mood, PlantMascot } from '@/components/auth/plant-mascot';
 import { SubmitButton, SubmitState } from '@/components/auth/submit-button';
-import { FloatingLeaves } from '@/components/animated';
+import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
 import { AppText, IconButton, Row, ScreenBackground } from '@/components/ui';
 import { authErrorDetail, useAuth } from '@/lib/auth';
@@ -80,7 +80,7 @@ export default function Verify() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenBackground />
-      <FloatingLeaves />
+      <BackdropLeaves />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -208,7 +208,7 @@ function CodeBox({ char, active, error, done, index }: { char?: string; active: 
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: pop.value }],
     borderColor: error ? colors.danger : done ? colors.lime : interpolateColor(Math.max(glow.value, filled.value), [0, 1], ['rgba(255,255,255,0.14)', colors.primary]),
-    backgroundColor: done ? 'rgba(198,244,50,0.15)' : interpolateColor(filled.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(61,220,132,0.12)']),
+    backgroundColor: done ? 'rgba(201,221,176,0.15)' : interpolateColor(filled.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(168,198,154,0.12)']),
   }));
 
   return (
@@ -238,9 +238,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(198,244,50,0.1)',
+    backgroundColor: 'rgba(201,221,176,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(198,244,50,0.35)',
+    borderColor: 'rgba(201,221,176,0.35)',
   },
   // Digits always read left-to-right, even in Arabic.
   boxes: { justifyContent: 'center', gap: 10, direction: 'ltr' },

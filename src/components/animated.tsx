@@ -43,32 +43,6 @@ export function FloatingLeaves() {
   );
 }
 
-/** Logo mark: a glowing orb with a breathing halo. */
-export function GlowLogo({ size = 120 }: { size?: number }) {
-  const p = useSharedValue(0);
-  const spin = useSharedValue(0);
-  useEffect(() => {
-    p.value = withRepeat(withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) }), -1, true);
-    spin.value = withRepeat(withTiming(1, { duration: 14000, easing: Easing.linear }), -1);
-  }, [p, spin]);
-  const halo = useAnimatedStyle(() => ({ transform: [{ scale: interpolate(p.value, [0, 1], [1, 1.25]) }], opacity: interpolate(p.value, [0, 1], [0.6, 0.15]) }));
-  const ring = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
-  return (
-    <View style={{ width: size * 1.5, height: size * 1.5, alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View style={[{ position: 'absolute', width: size * 1.3, height: size * 1.3, borderRadius: size, backgroundColor: colors.primary }, halo]} />
-      <Animated.View
-        style={[
-          { position: 'absolute', width: size * 1.18, height: size * 1.18, borderRadius: size, borderWidth: 2, borderColor: colors.lime, borderStyle: 'dashed' },
-          ring,
-        ]}
-      />
-      <LinearGradient colors={['#C6F432', '#3DDC84', '#14A55B']} style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: size * 0.5 }}>🌿</Text>
-      </LinearGradient>
-    </View>
-  );
-}
-
 /** Three bouncing dots, shown while the assistant is "typing". */
 export function TypingDots() {
   return (

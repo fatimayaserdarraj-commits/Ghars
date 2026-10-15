@@ -55,7 +55,7 @@ function Leaf({ side, at, grow, mood, sway, size = 1 }: { side: 'left' | 'right'
     // The wrapper is centred on the stem, so rotating it pivots the leaf at its base.
     <Animated.View style={[{ position: 'absolute', left: CX - len, bottom: POT_H + at * STEM - 9, width: len * 2, height: 18 }, style]}>
       <LinearGradient
-        colors={['#C6F432', '#3DDC84', '#14A55B']}
+        colors={['#C9DDB0', '#A8C69A', '#6E8F62']}
         start={{ x: side === 'left' ? 1 : 0, y: 0.5 }}
         end={{ x: side === 'left' ? 0 : 1, y: 0.5 }}
         style={[
@@ -124,7 +124,7 @@ export function PlantMascot({ mood, shrink }: { mood: Mood; shrink?: SharedValue
     transform: [{ scale: bloom.value }, { rotate: `${interpolate(sway.value, [0, 1], [-10, 10])}deg` }],
   }));
   const halo = useAnimatedStyle(() => ({
-    opacity: interpolate(glow.value, [0, 1], [0.25, 0.55]),
+    opacity: interpolate(glow.value, [0, 1], [0.06, 0.14]),
     transform: [{ scale: interpolate(glow.value, [0, 1], [0.92, 1.08]) }],
   }));
 
@@ -144,7 +144,7 @@ export function PlantMascot({ mood, shrink }: { mood: Mood; shrink?: SharedValue
           <Text style={{ fontSize: 30 }}>{mood === 'sad' ? '🥀' : '🌼'}</Text>
         </Animated.View>
       </Animated.View>
-      <LinearGradient colors={['#FF9A6B', '#E0603C']} style={styles.pot}>
+      <LinearGradient colors={['#E4E4DE', '#A9ACA4']} style={styles.pot}>
         <View style={styles.potRim} />
         <Text style={styles.face}>{mood === 'shy' ? '🙈' : mood === 'sad' ? '😟' : mood === 'happy' ? '😄' : mood === 'typing' ? '👀' : '🙂'}</Text>
       </LinearGradient>
@@ -155,9 +155,9 @@ export function PlantMascot({ mood, shrink }: { mood: Mood; shrink?: SharedValue
 const styles = StyleSheet.create({
   halo: { position: 'absolute', left: CX - 80, top: 6, width: 160, height: 160, borderRadius: 80, backgroundColor: colors.primary },
   sparkle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: colors.lime },
-  stem: { position: 'absolute', left: CX - 3, bottom: POT_H, width: 6, borderRadius: 3, backgroundColor: '#22B865' },
+  stem: { position: 'absolute', left: CX - 3, bottom: POT_H, width: 6, borderRadius: 3, backgroundColor: '#7FA06F' },
   leaf: { position: 'absolute', top: 0, width: 46, height: 18, overflow: 'hidden' },
-  vein: { position: 'absolute', top: 8.5, width: 34, height: 1.5, backgroundColor: 'rgba(5,33,15,0.25)' },
+  vein: { position: 'absolute', top: 8.5, width: 34, height: 1.5, backgroundColor: 'rgba(28,43,34,0.25)' },
   flower: { position: 'absolute', left: CX - 18, width: 36, alignItems: 'center' },
   pot: {
     position: 'absolute',
@@ -172,6 +172,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  potRim: { position: 'absolute', top: -4, left: -5, right: -5, height: 10, borderRadius: 5, backgroundColor: '#FFB089' },
+  potRim: { position: 'absolute', top: -4, left: -5, right: -5, height: 10, borderRadius: 5, backgroundColor: '#F1F1EC' },
   face: { fontSize: 18, marginTop: 6 },
 });

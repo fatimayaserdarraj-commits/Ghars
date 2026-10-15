@@ -7,7 +7,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTim
 
 import { LangToggle } from '@/components/lang-toggle';
 import { ReminderRow } from '@/components/reminder-row';
-import { AppText, Appear, GlassCard, GradientButton, IconBubble, PressableScale, Row, Screen, SectionTitle } from '@/components/ui';
+import { AppText, Appear, GlassCard, GradientButton, IconBubble, IconName, PressableScale, Row, Screen, SectionTitle } from '@/components/ui';
 import { PLANTS, plantById } from '@/data/plants';
 import { currentSeason, TIPS } from '@/data/seasons';
 import { useAuth } from '@/lib/auth';
@@ -16,22 +16,28 @@ import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, GradientName, gradients, radius, space } from '@/theme';
 
-const ACTIONS: { key: TKey; emoji: string; gradient: GradientName; href: Href }[] = [
-  { key: 'identify', emoji: '📷', gradient: 'primary', href: '/scan' },
-  { key: 'diagnose', emoji: '🩺', gradient: 'coral', href: { pathname: '/scan', params: { mode: 'diagnose' } } },
-  { key: 'guides', emoji: '📚', gradient: 'violet', href: '/guides' },
-  { key: 'shops', emoji: '🏪', gradient: 'sky', href: '/shops' },
-  { key: 'seasons', emoji: '🗓️', gradient: 'sun', href: '/seasons' },
-  { key: 'reminders', emoji: '⏰', gradient: 'mint', href: '/garden' },
+const ACTIONS: { key: TKey; icon: IconName; gradient: GradientName; href: Href }[] = [
+  { key: 'identify', icon: 'scan-outline', gradient: 'lime', href: '/scan' },
+  { key: 'diagnose', icon: 'medkit-outline', gradient: 'coral', href: { pathname: '/scan', params: { mode: 'diagnose' } } },
+  { key: 'guides', icon: 'book-outline', gradient: 'violet', href: '/guides' },
+  { key: 'shops', icon: 'storefront-outline', gradient: 'sky', href: '/shops' },
+  { key: 'seasons', icon: 'sunny-outline', gradient: 'sun', href: '/seasons' },
+  { key: 'reminders', icon: 'water-outline', gradient: 'mint', href: '/garden' },
 ];
 
-function Spinner({ emoji, isRTL }: { emoji: string; isRTL: boolean }) {
-  const r = useSharedValue(0);
+/** A potted plant that gently floats and sways on the season card. */
+function FloatingPlant({ emoji, isRTL }: { emoji: string; isRTL: boolean }) {
+  const t = useSharedValue(0);
   useEffect(() => {
-    r.value = withRepeat(withTiming(1, { duration: 20000, easing: Easing.linear }), -1);
-  }, [r]);
-  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value * 360}deg` }] }));
-  return <Animated.Text style={[{ fontSize: 86, position: 'absolute', top: -8, [isRTL ? 'left' : 'right']: -6, opacity: 0.9 }, style]}>{emoji}</Animated.Text>;
+    t.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.sin) }), -1, true);
+  }, [t]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: t.value * -8 }, { rotate: `${(t.value - 0.5) * 6}deg` }] }));
+  return (
+    <Animated.View style={[{ position: 'absolute', bottom: 18, [isRTL ? 'left' : 'right']: 14, alignItems: 'center' }, style]}>
+      <Text style={{ fontSize: 30, position: 'absolute', top: -14, [isRTL ? 'right' : 'left']: -6 }}>{emoji}</Text>
+      <Text style={{ fontSize: 92 }}>🪴</Text>
+    </Animated.View>
+  );
 }
 
 export default function Home() {
@@ -58,7 +64,7 @@ export default function Home() {
           <LangToggle />
           <PressableScale onPress={() => router.push('/settings')}>
             <LinearGradient colors={gradients.lime} style={styles.avatar}>
-              <Text style={{ fontWeight: '900', color: '#05210F', fontSize: 18 }}>{isGuest ? '🌱' : (user?.name[0] ?? '?').toUpperCase()}</Text>
+              <Text style={{ fontWeight: '900', color: '#1C2B22', fontSize: 18 }}>{isGuest ? '🌱' : (user?.name[0] ?? '?').toUpperCase()}</Text>
             </LinearGradient>
           </PressableScale>
         </Row>
@@ -83,30 +89,34 @@ export default function Home() {
 
       <Appear index={2}>
         <PressableScale onPress={() => router.push('/seasons')} scaleTo={0.98}>
-          <LinearGradient colors={gradients[season.gradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
-            <Spinner emoji={season.emoji} isRTL={isRTL} />
-            <AppText variant="label" color="rgba(5,33,15,0.7)">
-              {t('seasonNow')} · {l(season.months)}
-            </AppText>
-            <AppText variant="title" color="#05210F" style={{ marginTop: 4 }}>
-              {t(season.id)}
-            </AppText>
-            <AppText color="rgba(5,33,15,0.8)" style={{ marginTop: 4, maxWidth: '75%' }}>
-              {l(season.climate)}
-            </AppText>
-            <AppText variant="label" color="rgba(5,33,15,0.7)" style={{ marginTop: space.md }}>
-              {t('bestToPlant')}
-            </AppText>
-            <Row gap={6} wrap style={{ marginTop: 6 }}>
-              {picks.map((p) => (
+          <View style={styles.hero}>
+            <LinearGradient colors={gradients.deep} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <View style={styles.heroGlow} />
+            <FloatingPlant emoji={season.emoji} isRTL={isRTL} />
+            <View style={{ maxWidth: '64%' }}>
+              <AppText variant="label" color={colors.lime}>
+                {t('seasonNow')} · {l(season.months)}
+              </AppText>
+              <AppText variant="title" style={{ marginTop: 6, fontSize: 30 }}>
+                {t(season.id)}
+              </AppText>
+              <AppText color={colors.textDim} style={{ marginTop: 6, fontSize: 14 }}>
+                {l(season.climate)}
+              </AppText>
+            </View>
+            <Row gap={6} wrap style={{ marginTop: space.lg, maxWidth: '60%' }}>
+              {picks.slice(0, 3).map((p) => (
                 <View key={p.id} style={styles.pick}>
-                  <Text style={{ color: '#05210F', fontWeight: '700', fontSize: 12 }}>
+                  <Text style={{ color: colors.text, fontWeight: '600', fontSize: 12 }}>
                     {p.emoji} {l(p.name)}
                   </Text>
                 </View>
               ))}
             </Row>
-          </LinearGradient>
+            <View style={[styles.heroBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
+              <Text style={{ color: colors.onPrimary, fontWeight: '700', fontSize: 13 }}>{t('seasonsTitle')}</Text>
+            </View>
+          </View>
         </PressableScale>
       </Appear>
 
@@ -119,7 +129,7 @@ export default function Home() {
             <PressableScale onPress={() => router.push(a.href)}>
               <GlassCard padding={space.md} style={{ alignItems: 'center' }}>
                 <View style={{ alignItems: 'center', gap: 8 }}>
-                  <IconBubble emoji={a.emoji} gradient={a.gradient} size={50} />
+                  <IconBubble icon={a.icon} gradient={a.gradient} size={52} />
                   <AppText variant="caption" center color={colors.text} style={{ fontWeight: '700' }} numberOfLines={1}>
                     {t(a.key)}
                   </AppText>
@@ -197,6 +207,8 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  hero: { borderRadius: radius.xl, padding: space.xl, overflow: 'hidden', minHeight: 200 },
-  pick: { backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  hero: { borderRadius: radius.xl, padding: space.xl, overflow: 'hidden', minHeight: 220, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)' },
+  heroGlow: { position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(201,221,176,0.10)' },
+  pick: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  heroBtn: { alignSelf: 'flex-start', marginTop: space.lg, backgroundColor: colors.lime, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
 });

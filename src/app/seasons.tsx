@@ -36,8 +36,8 @@ export default function Seasons() {
                 colors={active ? gradients[s.gradient] : gradients.glass}
                 style={{ width: 96, paddingVertical: 14, borderRadius: radius.lg, alignItems: 'center', borderWidth: 1, borderColor: active ? 'transparent' : colors.border }}>
                 <Text style={{ fontSize: 30 }}>{s.emoji}</Text>
-                <Text style={{ color: active ? '#05140A' : colors.text, fontWeight: '800', marginTop: 4 }}>{t(s.id)}</Text>
-                {s.id === now.id && <Text style={{ color: active ? '#05140A' : colors.lime, fontSize: 10, fontWeight: '800' }}>● {t('nowLabel')}</Text>}
+                <Text style={{ color: active ? '#1C2B22' : colors.text, fontWeight: '800', marginTop: 4 }}>{t(s.id)}</Text>
+                {s.id === now.id && <Text style={{ color: active ? '#1C2B22' : colors.lime, fontSize: 10, fontWeight: '800' }}>● {t('nowLabel')}</Text>}
               </LinearGradient>
             </PressableScale>
           );
@@ -45,14 +45,14 @@ export default function Seasons() {
       </ScrollView>
 
       <Animated.View key={sel} entering={FadeInDown.springify().damping(16)}>
-        <LinearGradient colors={gradients[season.gradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.xl, padding: space.xl }}>
-          <AppText variant="label" color="rgba(5,20,10,0.7)">
+        <LinearGradient colors={gradients.deep} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: radius.xl, padding: space.xl, borderWidth: 1, borderColor: colors.border }}>
+          <AppText variant="label" color={colors.lime}>
             {l(season.months)}
           </AppText>
-          <AppText variant="title" color="#05140A">
+          <AppText variant="title" style={{ marginTop: 4 }}>
             {season.emoji} {t(season.id)}
           </AppText>
-          <AppText color="rgba(5,20,10,0.8)" style={{ marginTop: 4 }}>
+          <AppText color={colors.textDim} style={{ marginTop: 4 }}>
             {l(season.climate)}
           </AppText>
         </LinearGradient>

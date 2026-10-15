@@ -65,16 +65,16 @@ export function SubmitButton({ title, icon, state, onPress }: { title: string; i
           <Animated.View pointerEvents="none" style={[styles.shine, shineStyle]} />
           {state === 'idle' && (
             <Animated.View style={[styles.row, label]}>
-              <Ionicons name={icon} size={20} color="#05210F" />
+              <Ionicons name={icon} size={20} color="#1C2B22" />
               <Text numberOfLines={1} style={styles.text}>
                 {title}
               </Text>
             </Animated.View>
           )}
-          {state === 'loading' && <ActivityIndicator color="#05210F" />}
+          {state === 'loading' && <ActivityIndicator color="#1C2B22" />}
           {state === 'success' && (
             <Animated.View entering={ZoomIn.springify().damping(9)}>
-              <Ionicons name="checkmark" size={30} color="#05210F" />
+              <Ionicons name="checkmark" size={30} color="#1C2B22" />
             </Animated.View>
           )}
         </Animated.View>
@@ -97,5 +97,5 @@ const styles = StyleSheet.create({
   },
   shine: { position: 'absolute', top: -20, bottom: -20, width: 46, backgroundColor: 'rgba(255,255,255,0.35)' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  text: { color: '#05210F', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 },
+  text: { color: '#1C2B22', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 },
 });

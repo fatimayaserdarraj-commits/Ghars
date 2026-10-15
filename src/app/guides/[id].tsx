@@ -103,7 +103,7 @@ export default function Lesson() {
                           borderRadius: radius.md,
                           borderWidth: 1.5,
                           borderColor: right ? colors.primary : wrong ? colors.coral : colors.border,
-                          backgroundColor: right ? 'rgba(61,220,132,0.18)' : wrong ? 'rgba(255,122,107,0.15)' : colors.surface,
+                          backgroundColor: right ? 'rgba(168,198,154,0.18)' : wrong ? 'rgba(255,122,107,0.15)' : colors.surface,
                         }}>
                         <Row justify="space-between">
                           <AppText>{l(o)}</AppText>

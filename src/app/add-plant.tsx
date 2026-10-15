@@ -74,7 +74,7 @@ export default function AddPlant() {
                 alignItems: 'center',
                 borderWidth: 1.5,
                 borderColor: active ? colors.primary : colors.border,
-                backgroundColor: active ? 'rgba(61,220,132,0.15)' : colors.surface,
+                backgroundColor: active ? 'rgba(168,198,154,0.15)' : colors.surface,
               }}>
               <Text style={{ fontSize: 28 }}>{p.emoji}</Text>
               <AppText variant="caption" center numberOfLines={1} color={active ? colors.text : colors.textDim} style={{ fontWeight: '700', marginTop: 4 }}>

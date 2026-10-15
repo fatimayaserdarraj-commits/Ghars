@@ -1,91 +1,98 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FloatingLeaves, GlowLogo } from '@/components/animated';
+import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
-import { AppText, GhostButton, GradientButton, Row, ScreenBackground } from '@/components/ui';
+import { LeafLogo } from '@/components/logo';
+import { AppText, PressableScale, Row, ScreenBackground } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
-import { colors, space } from '@/theme';
+import { colors, gradients, radius, space } from '@/theme';
 
-const FEATURES: { emoji: string; key: TKey }[] = [
-  { emoji: '📷', key: 'identify' },
-  { emoji: '🩺', key: 'diagnose' },
-  { emoji: '📚', key: 'guides' },
-  { emoji: '⏰', key: 'reminders' },
-  { emoji: '🗓️', key: 'seasons' },
-  { emoji: '🏪', key: 'shops' },
-];
+const SLIDES: TKey[] = ['welcomeLines1', 'welcomeLines2', 'welcomeLines3'];
 
 export default function Welcome() {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { continueAsGuest, user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [feature, setFeature] = useState(0);
+  const [slide, setSlide] = useState(0);
 
-  // Cycle through feature highlights.
   useEffect(() => {
-    const id = setInterval(() => setFeature((f) => (f + 1) % FEATURES.length), 2200);
+    const id = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 3200);
     return () => clearInterval(id);
   }, []);
-
-  const f = FEATURES[feature];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenBackground />
-      <FloatingLeaves />
+      <BackdropLeaves />
       <View style={{ flex: 1, paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.lg, paddingHorizontal: space.xl }}>
         <Row justify="flex-end">
           <LangToggle />
         </Row>
 
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View entering={FadeIn.duration(900)}>
-            <GlowLogo size={110} />
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(250).duration(700)} style={{ marginTop: space.lg, alignSelf: 'stretch' }}>
-            <AppText variant="label" center color={colors.lime}>
-              {t('appName')}
-            </AppText>
-            <AppText variant="hero" center style={{ marginTop: space.sm }}>
-              {t('welcomeTitle')}
-            </AppText>
-            <AppText variant="caption" center style={{ marginTop: space.md, fontSize: 15 }}>
-              {t('welcomeBody')}
-            </AppText>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Animated.View entering={FadeInDown.duration(800)} style={styles.card}>
+            <LinearGradient colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <View style={{ alignItems: 'center', paddingVertical: 48, paddingHorizontal: space.xl }}>
+              <LeafLogo size={64} animated />
+              <Animated.View entering={FadeIn.delay(500).duration(800)}>
+                <AppText variant="hero" center style={{ fontSize: 44, lineHeight: 54, marginTop: space.lg }}>
+                  {t('appName')}
+                </AppText>
+                <AppText center color={colors.lime} style={{ fontSize: 17, marginTop: 6, fontWeight: '500' }}>
+                  {t('welcomeSlogan')}
+                </AppText>
+              </Animated.View>
+
+              <View style={{ height: 84, justifyContent: 'center', marginTop: space.lg }}>
+                <Animated.View key={slide} entering={FadeInUp.duration(500)} exiting={FadeOut.duration(250)}>
+                  <AppText center color={colors.textDim} style={{ fontSize: 15, lineHeight: 23 }}>
+                    {t(SLIDES[slide])}
+                  </AppText>
+                </Animated.View>
+              </View>
+
+              <Animated.View entering={FadeInUp.delay(700).duration(700)} style={{ alignSelf: 'stretch', marginTop: space.lg }}>
+                <PressableScale onPress={() => router.push('/register')} style={styles.cta}>
+                  <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+                  <Row justify="center" gap={space.md}>
+                    <Text style={styles.ctaText}>{t('getStarted')}</Text>
+                    <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={20} color={colors.onPrimary} />
+                  </Row>
+                </PressableScale>
+              </Animated.View>
+            </View>
           </Animated.View>
 
-          <View style={styles.featureSlot}>
-            <Animated.View key={feature} entering={FadeInUp.springify().damping(14)} exiting={FadeOut.duration(200)} style={styles.feature}>
-              <AppText style={{ fontSize: 22 }}>{f.emoji}</AppText>
-              <AppText variant="h2">{t(f.key)}</AppText>
-            </Animated.View>
-          </View>
-          <Row gap={6} justify="center">
-            {FEATURES.map((_, i) => (
-              <View key={i} style={[styles.dot, i === feature && styles.dotActive]} />
+          <Row gap={8} justify="center" style={{ marginTop: space.xl }}>
+            {SLIDES.map((_, i) => (
+              <View key={i} style={[styles.dot, i === slide && styles.dotActive]} />
             ))}
           </Row>
         </View>
 
-        <Animated.View entering={FadeInUp.delay(450).duration(700)} style={{ gap: space.md }}>
-          <GradientButton title={t('getStarted')} icon="sparkles" onPress={() => router.push('/register')} />
-          <GhostButton title={t('haveAccount')} onPress={() => router.push('/login')} />
+        <Animated.View entering={FadeInUp.delay(900).duration(700)} style={{ gap: space.md, alignItems: 'center' }}>
+          <Pressable onPress={() => router.push('/login')} hitSlop={8}>
+            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 15 }}>
+              {t('haveAccount')} <Text style={{ color: colors.lime }}>→</Text>
+            </Text>
+          </Pressable>
           {!user && (
-            <GhostButton
-              title={t('exploreGuest')}
-              icon="compass-outline"
-              style={{ borderWidth: 0, backgroundColor: 'transparent' }}
+            <Pressable
+              hitSlop={8}
               onPress={async () => {
                 await continueAsGuest();
                 router.replace('/(tabs)');
-              }}
-            />
+              }}>
+              <Text style={{ color: colors.textFaint, fontSize: 14 }}>{t('exploreGuest')}</Text>
+            </Pressable>
           )}
         </Animated.View>
       </View>
@@ -94,18 +101,9 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  featureSlot: { height: 64, marginTop: space.xl, justifyContent: 'center' },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(61,220,132,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(61,220,132,0.35)',
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
-  dotActive: { width: 20, backgroundColor: colors.primary },
+  card: { borderRadius: 34, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backgroundColor: 'rgba(40,58,47,0.35)' },
+  cta: { height: 58, borderRadius: radius.pill, overflow: 'hidden', justifyContent: 'center' },
+  ctaText: { color: colors.onPrimary, fontSize: 17, fontWeight: '600' },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.25)' },
+  dotActive: { backgroundColor: colors.lime },
 });

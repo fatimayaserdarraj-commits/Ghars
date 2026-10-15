@@ -8,7 +8,7 @@
     "scheme": "mpsgarden",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "MPS uses the camera to identify plants and diagnose plant health.",
@@ -18,12 +18,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B2E1F",
+        "backgroundColor": "#1C2A22",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -35,9 +39,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B2E1F",
+          "backgroundColor": "#1C2A22",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 110
         }
       ],
       "expo-secure-store",

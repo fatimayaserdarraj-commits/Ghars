@@ -58,7 +58,7 @@ export default function PlantDetail() {
         />
       }>
       <Appear>
-        <View style={{ height: 200, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: 'rgba(61,220,132,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ height: 200, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: 'rgba(168,198,154,0.12)', alignItems: 'center', justifyContent: 'center' }}>
           {plant.photoUri ? <Image source={{ uri: plant.photoUri }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : <Text style={{ fontSize: 110 }}>{s?.emoji}</Text>}
         </View>
       </Appear>
@@ -219,7 +219,7 @@ function Journal({ plantId, entries, lang }: { plantId: string; entries: Journal
               <Row gap={space.md} align="flex-start">
                 <View style={{ alignItems: 'center' }}>
                   <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: colors.primary, marginTop: 18 }} />
-                  {i < entries.length - 1 && <View style={{ width: 2, flex: 1, minHeight: 60, backgroundColor: 'rgba(61,220,132,0.3)' }} />}
+                  {i < entries.length - 1 && <View style={{ width: 2, flex: 1, minHeight: 60, backgroundColor: 'rgba(168,198,154,0.3)' }} />}
                 </View>
                 <PressableScale
                   style={{ flex: 1 }}

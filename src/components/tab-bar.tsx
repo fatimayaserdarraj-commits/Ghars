@@ -1,7 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
-import { colors, gradients } from '@/theme';
+import { colors } from '@/theme';
 
 import { IconName } from './ui';
 
@@ -58,11 +57,11 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         {Platform.OS === 'ios' ? (
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#08180F' }]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#1F2E26' }]} />
         )}
         {width > 0 && (
           <Animated.View style={[styles.pillWrap, { width: slot, [isRTL ? 'right' : 'left']: 0 }, pill]}>
-            <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.pill} />
+            <View style={styles.pill} />
           </Animated.View>
         )}
         <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
@@ -109,13 +108,15 @@ function TabItem({
 }) {
   const style = useAnimatedStyle(() => {
     const d = Math.min(Math.abs(progress.value - index), 1);
-    return { transform: [{ scale: interpolate(d, [0, 1], [1.06, 1]) }, { translateY: interpolate(d, [0, 1], [-2, 0]) }] };
+    return { transform: [{ scale: interpolate(d, [0, 1], [1.05, 1]) }] };
   });
   return (
     <Pressable onPress={onPress} style={styles.item} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={label}>
       <Animated.View style={[{ alignItems: 'center' }, style]}>
-        <Ionicons name={icon} size={22} color={focused ? '#05210F' : colors.textDim} />
-        <Text numberOfLines={1} style={{ fontSize: 10, marginTop: 2, fontWeight: '800', color: focused ? '#05210F' : colors.textFaint }}>
+        <View style={styles.iconBox}>
+          <Ionicons name={icon} size={21} color={focused ? colors.lime : colors.textDim} />
+        </View>
+        <Text numberOfLines={1} style={{ fontSize: 10, marginTop: 3, fontWeight: focused ? '700' : '500', color: focused ? colors.lime : colors.textFaint }}>
           {label}
         </Text>
       </Animated.View>
@@ -132,7 +133,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     paddingVertical: 6,
   },
-  pillWrap: { position: 'absolute', top: 6, bottom: 6, paddingHorizontal: 6 },
-  pill: { flex: 1, borderRadius: 22 },
-  item: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+  // A frosted sage circle that slides behind the active icon.
+  pillWrap: { position: 'absolute', top: 12, height: 44, alignItems: 'center' },
+  pill: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(168,198,154,0.22)', borderWidth: 1, borderColor: 'rgba(201,221,176,0.45)' },
+  iconBox: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
 });

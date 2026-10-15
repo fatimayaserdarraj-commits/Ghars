@@ -1,3 +1,6 @@
+import { PlayfairDisplay_500Medium } from '@expo-google-fonts/playfair-display/500Medium';
+import { PlayfairDisplay_600SemiBold } from '@expo-google-fonts/playfair-display/600SemiBold';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -15,10 +18,13 @@ SplashScreen.preventAutoHideAsync();
 
 function RootStack() {
   const { ready } = useAuth();
+  // Continue even if the fonts fail to load; text then falls back to the system face.
+  const [fontsLoaded, fontError] = useFonts({ PlayfairDisplay_500Medium, PlayfairDisplay_600SemiBold });
+  const fonts = fontsLoaded || !!fontError;
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
-  }, [ready]);
-  if (!ready) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+    if (ready && fonts) SplashScreen.hideAsync();
+  }, [ready, fonts]);
+  if (!ready || !fonts) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
       <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />

@@ -72,6 +72,8 @@ export function AppText({
       style={[
         { color: colors.text, fontFamily: font.display, writingDirection: isRTL ? 'rtl' : 'ltr', textAlign: center ? 'center' : isRTL ? 'right' : 'left' },
         variantStyle[variant],
+        // Serif display face for big headings (it has no Arabic glyphs, so Arabic keeps the system font).
+        !isRTL && (variant === 'hero' || variant === 'title') ? { fontFamily: font.serif, fontWeight: 'normal', letterSpacing: 0 } : null,
         color ? { color } : null,
         style,
       ]}>
@@ -132,9 +134,9 @@ export function ScreenBackground() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient colors={gradients.screen} style={StyleSheet.absoluteFill} />
-      <Orb size={260} color="rgba(61,220,132,0.18)" x={-80} y={-60} delay={0} />
-      <Orb size={200} color="rgba(198,244,50,0.10)" x={220} y={180} delay={1500} />
-      <Orb size={240} color="rgba(91,192,255,0.10)" x={-40} y={520} delay={3000} />
+      <Orb size={280} color="rgba(168,198,154,0.10)" x={-90} y={-70} delay={0} />
+      <Orb size={220} color="rgba(201,221,176,0.06)" x={210} y={170} delay={1500} />
+      <Orb size={260} color="rgba(120,160,130,0.08)" x={-50} y={520} delay={3000} />
     </View>
   );
 }
@@ -255,7 +257,7 @@ export function GradientButton({
   }, [shine]);
   const shineStyle = useAnimatedStyle(() => ({ transform: [{ translateX: interpolate(shine.value, [0, 1], [-160, 420]) }, { rotate: '20deg' }] }));
   const dark = gradient === 'lime' || gradient === 'sun' || gradient === 'mint' || gradient === 'primary';
-  const fg = dark ? '#05210F' : '#fff';
+  const fg = dark ? '#1C2B22' : '#fff';
   return (
     <PressableScale onPress={onPress} disabled={disabled || loading} style={[{ borderRadius: radius.pill, ...shadow }, style]}>
       <LinearGradient
@@ -316,6 +318,19 @@ export function Appear({ children, index = 0, style }: { children: ReactNode; in
   );
 }
 
+const ACCENTS: Record<GradientName, string> = {
+  primary: colors.primary,
+  lime: colors.lime,
+  sun: colors.sun,
+  coral: colors.coral,
+  sky: colors.sky,
+  violet: colors.violet,
+  mint: colors.mint,
+  glass: colors.primary,
+  deep: colors.primary,
+  screen: colors.primary,
+};
+
 export function IconBubble({
   emoji,
   icon,
@@ -327,14 +342,22 @@ export function IconBubble({
   gradient?: GradientName;
   size?: number;
 }) {
+  // Frosted tile tinted with the accent colour, with a thin outline icon (or an emoji).
+  const accent = ACCENTS[gradient];
   return (
-    <LinearGradient
-      colors={gradients[gradient]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ width: size, height: size, borderRadius: size * 0.34, alignItems: 'center', justifyContent: 'center' }}>
-      {emoji ? <Text style={{ fontSize: size * 0.5 }}>{emoji}</Text> : <Ionicons name={icon ?? 'leaf'} size={size * 0.5} color="#05210F" />}
-    </LinearGradient>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size * 0.32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: `${accent}1F`,
+        borderWidth: 1,
+        borderColor: `${accent}55`,
+      }}>
+      {emoji ? <Text style={{ fontSize: size * 0.5 }}>{emoji}</Text> : <Ionicons name={icon ?? 'leaf-outline'} size={size * 0.48} color={accent} />}
+    </View>
   );
 }
 
@@ -407,7 +430,7 @@ export function Input({
   }, [focused, f]);
   const box = useAnimatedStyle(() => ({
     borderColor: error ? colors.danger : interpolateColor(f.value, [0, 1], [colors.border, colors.primary]),
-    backgroundColor: interpolateColor(f.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(61,220,132,0.08)']),
+    backgroundColor: interpolateColor(f.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(168,198,154,0.08)']),
   }));
   return (
     <View style={{ gap: 6 }}>
@@ -458,7 +481,7 @@ export function Chip({ label, active, onPress, emoji }: { label: string; active?
   return (
     <PressableScale onPress={onPress}>
       <Animated.View style={[styles.chip, style]}>
-        <Text style={{ color: active ? '#05210F' : colors.text, fontWeight: '700', fontSize: font.sizes.sm }}>
+        <Text style={{ color: active ? '#1C2B22' : colors.text, fontWeight: '700', fontSize: font.sizes.sm }}>
           {emoji ? `${emoji}  ` : ''}
           {label}
         </Text>
@@ -491,8 +514,8 @@ export function Segmented<T extends string>({ options, value, onChange }: { opti
           return (
             <Pressable key={o.id} onPress={() => onChange(o.id)} style={{ flex: 1, paddingVertical: 12, alignItems: 'center' }}>
               <Row gap={6}>
-                {o.icon && <Ionicons name={o.icon} size={16} color={active ? '#05210F' : colors.textDim} />}
-                <Text style={{ color: active ? '#05210F' : colors.textDim, fontWeight: '800' }}>{o.label}</Text>
+                {o.icon && <Ionicons name={o.icon} size={16} color={active ? '#1C2B22' : colors.textDim} />}
+                <Text style={{ color: active ? '#1C2B22' : colors.textDim, fontWeight: '800' }}>{o.label}</Text>
               </Row>
             </Pressable>
           );
@@ -507,7 +530,7 @@ const styles = StyleSheet.create({
   shine: { position: 'absolute', top: -20, bottom: -20, width: 50, backgroundColor: 'rgba(255,255,255,0.35)' },
   ghost: { paddingVertical: 15, paddingHorizontal: 22, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   iconBtn: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  card: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', backgroundColor: 'rgba(10,30,20,0.55)' },
+  card: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)' },
   input: { borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: space.md },
   chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: radius.pill, borderWidth: 1 },
   segment: { padding: 4, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },

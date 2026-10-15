@@ -132,7 +132,7 @@ export default function Assistant() {
             />
             <PressableScale onPress={() => send()} disabled={!text.trim() || typing}>
               <LinearGradient colors={gradients.primary} style={styles.send}>
-                <Ionicons name="arrow-up" size={22} color="#05210F" />
+                <Ionicons name="arrow-up" size={22} color="#1C2B22" />
               </LinearGradient>
             </PressableScale>
           </Row>
@@ -150,7 +150,7 @@ function Bubble({ m, isRTL }: { m: ChatMessage; isRTL: boolean }) {
     <Animated.View entering={(mine ? FadeInUp : FadeInDown).springify().damping(16)} style={{ alignSelf: mine ? end : start, maxWidth: '86%' }}>
       {mine ? (
         <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.bubble, styles.mine]}>
-          <AppText color="#05210F">{m.text}</AppText>
+          <AppText color="#1C2B22">{m.text}</AppText>
         </LinearGradient>
       ) : (
         <Row gap={space.sm} align="flex-end">
@@ -170,9 +170,9 @@ const styles = StyleSheet.create({
   bubble: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: radius.lg },
   mine: { borderBottomRightRadius: 6 },
   bot: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 6 },
-  botAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(61,220,132,0.2)', alignItems: 'center', justifyContent: 'center' },
+  botAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(168,198,154,0.2)', alignItems: 'center', justifyContent: 'center' },
   suggestion: { padding: 14, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  composer: { backgroundColor: 'rgba(10,30,20,0.9)', borderWidth: 1, borderColor: colors.border, borderRadius: 26, paddingHorizontal: 14, paddingVertical: 6 },
+  composer: { backgroundColor: 'rgba(34,50,41,0.95)', borderWidth: 1, borderColor: colors.border, borderRadius: 26, paddingHorizontal: 14, paddingVertical: 6 },
   send: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
 });
 

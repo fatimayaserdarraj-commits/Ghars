@@ -51,7 +51,7 @@ export default function Garden() {
                         {p.photoUri ? (
                           <Image source={{ uri: p.photoUri }} style={{ width: 64, height: 64, borderRadius: 18 }} />
                         ) : (
-                          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: 'rgba(61,220,132,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: 'rgba(168,198,154,0.14)', alignItems: 'center', justifyContent: 'center' }}>
                             <Text style={{ fontSize: 34 }}>{s?.emoji ?? '🌿'}</Text>
                           </View>
                         )}

@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FloatingLeaves } from '@/components/animated';
+import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
 import { AppText, IconButton, IconName, PressableScale, Row, ScreenBackground, Segmented } from '@/components/ui';
 import { authErrorDetail, passwordScore, useAuth, validEmail, validPassword } from '@/lib/auth';
@@ -152,7 +152,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenBackground />
-      <FloatingLeaves />
+      <BackdropLeaves />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -355,7 +355,7 @@ function Requirement({ ok, label, optional }: { ok: boolean; label: string; opti
   }));
   return (
     <Row gap={8}>
-      <Animated.View style={[styles.reqDot, dot]}>{ok && <Ionicons name="checkmark" size={11} color="#05210F" />}</Animated.View>
+      <Animated.View style={[styles.reqDot, dot]}>{ok && <Ionicons name="checkmark" size={11} color="#1C2B22" />}</Animated.View>
       <AppText variant="caption" color={ok ? colors.text : colors.textDim} style={{ fontSize: 12.5 }}>
         {label}
       </AppText>
@@ -392,8 +392,8 @@ function SocialButtons() {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.xl, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', backgroundColor: 'rgba(8,26,17,0.72)' },
-  cardGlow: { position: 'absolute', top: -60, alignSelf: 'center', width: 220, height: 120, borderRadius: 110, backgroundColor: 'rgba(61,220,132,0.12)' },
+  card: { borderRadius: radius.xl, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)' },
+  cardGlow: { position: 'absolute', top: -60, alignSelf: 'center', width: 220, height: 120, borderRadius: 110, backgroundColor: 'rgba(168,198,154,0.12)' },
   banner: { padding: 12, borderRadius: radius.md, backgroundColor: 'rgba(255,90,95,0.12)', borderWidth: 1, borderColor: 'rgba(255,90,95,0.4)' },
   reqDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   line: { flex: 1, height: 1, backgroundColor: colors.border },

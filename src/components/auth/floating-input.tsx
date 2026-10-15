@@ -52,7 +52,7 @@ export function FloatingInput({ label, icon, error, shakeKey = 0, secure, valid,
   const box = useAnimatedStyle(() => ({
     transform: [{ translateX: shake.value }],
     borderColor: error ? colors.danger : interpolateColor(focus.value, [0, 1], ['rgba(255,255,255,0.12)', colors.primary]),
-    backgroundColor: interpolateColor(focus.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(61,220,132,0.08)']),
+    backgroundColor: interpolateColor(focus.value, [0, 1], ['rgba(255,255,255,0.05)', 'rgba(168,198,154,0.08)']),
     shadowOpacity: focus.value * 0.5,
   }));
   const labelStyle = useAnimatedStyle(() => ({

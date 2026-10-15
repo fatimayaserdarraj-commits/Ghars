@@ -55,13 +55,13 @@ export function ReminderRow({ reminder, showPlant, onLongPress }: { reminder: Re
                 borderRadius: 23,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: justDone ? colors.primary : 'rgba(61,220,132,0.12)',
+                backgroundColor: justDone ? colors.primary : 'rgba(168,198,154,0.12)',
                 borderWidth: 1,
                 borderColor: colors.primary,
               }}>
               {justDone ? (
                 <Animated.View entering={ZoomIn.springify()}>
-                  <Ionicons name="checkmark" size={24} color="#05210F" />
+                  <Ionicons name="checkmark" size={24} color="#1C2B22" />
                 </Animated.View>
               ) : (
                 <Ionicons name="checkmark" size={22} color={colors.primary} />

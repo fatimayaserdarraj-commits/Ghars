@@ -39,7 +39,7 @@ export default function Settings() {
         <GlassCard>
           <Row gap={space.lg}>
             <LinearGradient colors={gradients.lime} style={{ width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 28, fontWeight: '900', color: '#05210F' }}>{isGuest ? '🌱' : user?.name[0]?.toUpperCase()}</Text>
+              <Text style={{ fontSize: 28, fontWeight: '900', color: '#1C2B22' }}>{isGuest ? '🌱' : user?.name[0]?.toUpperCase()}</Text>
             </LinearGradient>
             <View style={{ flex: 1, gap: 2 }}>
               <AppText variant="h2">{isGuest ? t('guest') : user?.name}</AppText>
@@ -61,7 +61,7 @@ export default function Settings() {
 
       {isGuest && (
         <Appear index={1}>
-          <GradientButton title={t('getStarted')} icon="person-add" onPress={() => router.push('/register')} />
+          <GradientButton title={t('signUp')} icon="person-add-outline" onPress={() => router.push('/register')} />
         </Appear>
       )}
 

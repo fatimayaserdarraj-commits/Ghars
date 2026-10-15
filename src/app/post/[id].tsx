@@ -61,7 +61,7 @@ export default function PostDetail() {
                 setText('');
               }}>
               <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="send" size={16} color="#05210F" style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
+                <Ionicons name="send" size={16} color="#1C2B22" style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
               </View>
             </PressableScale>
           </Row>

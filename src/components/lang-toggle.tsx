@@ -29,5 +29,5 @@ const styles = StyleSheet.create({
   knob: { position: 'absolute', top: 4, left: 4, width: 44, height: 30, borderRadius: 15, backgroundColor: colors.primary },
   row: { flex: 1, flexDirection: 'row' },
   txt: { flex: 1, textAlign: 'center', lineHeight: 30, fontWeight: '800', color: colors.textDim },
-  active: { color: '#05210F' },
+  active: { color: '#1C2B22' },
 });
