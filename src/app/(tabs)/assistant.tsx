@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TypingDots } from '@/components/animated';
+import { RichText } from '@/components/rich-text';
 import { AppText, Badge, Header, IconButton, PressableScale, Row, ScreenBackground, TAB_BAR_SPACE } from '@/components/ui';
 import { plantById } from '@/data/plants';
 import { aiOnline, aiProvider, chatReply } from '@/lib/ai';
@@ -158,7 +159,7 @@ function Bubble({ m, isRTL }: { m: ChatMessage; isRTL: boolean }) {
             <AppText style={{ fontSize: 16 }}>🌿</AppText>
           </View>
           <View style={[styles.bubble, styles.bot, { flexShrink: 1 }]}>
-            <AppText>{m.text}</AppText>
+            <RichText text={m.text} />
           </View>
         </Row>
       )}

@@ -19,7 +19,9 @@ import { Lang } from './translations';
  */
 const GEMINI_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 // Google renames and retires models; try the configured one, then Google's always-current Flash alias.
-const GEMINI_MODELS = [...new Set([process.env.EXPO_PUBLIC_GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash'].filter(Boolean) as string[])];
+const GEMINI_MODELS = [
+  ...new Set([process.env.EXPO_PUBLIC_GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'].filter(Boolean) as string[]),
+];
 let geminiModel = GEMINI_MODELS[0];
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 // With Supabase connected, the `ai` Edge Function (supabase/functions/ai) is used by default.
@@ -95,11 +97,18 @@ async function callGemini(system: string, messages: Msg[], maxTokens: number) {
       body,
     });
   let res = await request(geminiModel);
-  // 404 = this model name no longer exists; fall back to the next candidate and remember it.
+  // 503/429 = busy or rate-limited: wait a moment and retry once.
+  if (res.status === 503 || res.status === 429) {
+    await new Promise((r) => setTimeout(r, 1500));
+    res = await request(geminiModel);
+  }
+  // 404 = the model was retired; 503 = it is overloaded. Try the other models, and remember one that works
+  // (only for 404, since overload is temporary).
   for (const next of GEMINI_MODELS) {
-    if (res.status !== 404 || next === geminiModel) continue;
+    if ((res.status !== 404 && res.status !== 503) || next === geminiModel) continue;
+    const retired = res.status === 404;
     res = await request(next);
-    if (res.ok) geminiModel = next;
+    if (res.ok && retired) geminiModel = next;
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
