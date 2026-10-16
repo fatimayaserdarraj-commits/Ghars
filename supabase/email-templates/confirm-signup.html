@@ -1,14 +1,47 @@
-<!-- Supabase → Authentication → Emails → Templates → "Confirm sign up".
-     Subject: Your MPS Garden code: {{ .Token }}
-     Paste everything below into the message body. -->
-<div style="font-family: Arial, Helvetica, sans-serif; background:#06140E; padding:32px 16px;">
-  <div style="max-width:420px; margin:0 auto; background:#0B2E1F; border-radius:20px; padding:32px 24px; text-align:center; color:#F2FBF5;">
-    <div style="font-size:42px; line-height:1;">🌿</div>
-    <h1 style="margin:16px 0 8px; font-size:22px;">Verify your email</h1>
-    <p style="margin:0 0 24px; color:#B8CCBF; font-size:15px;">Enter this code in the MPS Garden app to activate your account.</p>
-    <div style="display:inline-block; background:#3DDC84; color:#05210F; font-size:32px; font-weight:800; letter-spacing:10px; padding:14px 22px; border-radius:14px;">{{ .Token }}</div>
-    <p style="margin:24px 0 0; color:#8FA597; font-size:13px;">The code expires in 1 hour. If you didn't sign up, you can ignore this email.</p>
-    <hr style="border:none; border-top:1px solid #1E4A35; margin:24px 0;">
-    <p style="margin:0; color:#8FA597; font-size:13px;" dir="rtl">رمز التحقق الخاص بك في تطبيق حديقة MPS: <b style="color:#F2FBF5;">{{ .Token }}</b></p>
-  </div>
-</div>
+<!--
+  Supabase → Authentication → Emails → Templates → "Confirm sign up" (needs custom SMTP).
+  Subject:  Your MPS Garden code: {{ .Token }}
+  Body:     click "Source", delete everything, and paste everything below this comment.
+  The logo is loaded from the public GitHub repo; change the src to use another image.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1C2A22; padding:32px 12px; font-family:Arial, Helvetica, sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px; background:#2A3D32; border:1px solid #3E5646; border-radius:24px;">
+        <tr>
+          <td align="center" style="padding:36px 28px 8px;">
+            <img src="https://raw.githubusercontent.com/fatimayaserdarraj-commits/rootly/main/assets/images/icon.png" width="72" height="72" alt="MPS Garden" style="display:block; border-radius:18px; border:0;">
+            <h1 style="margin:18px 0 4px; font-family:Georgia, 'Times New Roman', serif; font-size:28px; font-weight:normal; color:#EEF2EA;">MPS Garden</h1>
+            <p style="margin:0; font-size:14px; color:#C9DDB0;">Bring Nature Home</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:24px 28px 8px;">
+            <p style="margin:0 0 6px; font-size:18px; font-weight:bold; color:#EEF2EA;">Verify your email 🌿</p>
+            <p style="margin:0 0 22px; font-size:14px; line-height:21px; color:#B9C7BD;">Enter this code in the app to activate your account.</p>
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#C9DDB0; border-radius:16px; padding:16px 26px; font-size:34px; font-weight:bold; letter-spacing:10px; color:#1C2B22; font-family:'Courier New', monospace;">{{ .Token }}</td>
+              </tr>
+            </table>
+            <p style="margin:18px 0 0; font-size:12px; color:#8FA597;">The code expires in 1 hour.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 28px 0;"><div style="border-top:1px solid #3E5646;"></div></td>
+        </tr>
+        <tr>
+          <td align="center" dir="rtl" style="padding:18px 28px 0;">
+            <p style="margin:0 0 6px; font-size:16px; font-weight:bold; color:#EEF2EA;">تحقّق من بريدك الإلكتروني</p>
+            <p style="margin:0; font-size:14px; line-height:22px; color:#B9C7BD;">أدخل الرمز <b style="color:#C9DDB0;">{{ .Token }}</b> في التطبيق لتفعيل حسابك. تنتهي صلاحية الرمز خلال ساعة.</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:24px 28px 30px;">
+            <p style="margin:0; font-size:12px; line-height:18px; color:#7F937F;">If you didn't create an account, you can ignore this email.<br>إذا لم تنشئ حسابًا، يمكنك تجاهل هذه الرسالة.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
