@@ -1,4 +1,4 @@
--- MPS Garden — Supabase schema
+-- Ghars — Supabase schema
 -- Paste this whole file into Supabase → SQL Editor → New query → Run.
 -- It is safe to run more than once.
 
@@ -90,8 +90,8 @@ create policy "photos: delete own" on storage.objects for delete to authenticate
 -- ---------------------------------------------------------------- welcome posts (optional)
 -- Shown once the first user exists; remove this block if you don't want sample posts.
 insert into public.posts (author_id, author_name, type, text)
-select id, 'MPS Team', 'tip',
-       'Welcome to the MPS community! 🌿 Share your plants, ask questions and help fellow gardeners.'
+select id, 'Ghars Team', 'tip',
+       'Welcome to the Ghars community! 🌿 Share your plants, ask questions and help fellow gardeners.'
 from auth.users
 where not exists (select 1 from public.posts)
 order by created_at

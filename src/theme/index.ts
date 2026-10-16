@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 /**
- * MPS design tokens — "sage glass": deep forest-green surfaces, frosted glass cards
+ * Ghars design tokens — "sage glass": deep forest-green surfaces, frosted glass cards
  * and soft sage accents, with a serif display face for headings.
  */
 export const colors = {

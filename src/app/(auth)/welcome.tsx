@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
-import { LeafLogo } from '@/components/logo';
+import { brand, BrandLogo } from '@/components/brand';
 import { AppText, PressableScale, Row, ScreenBackground } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -41,12 +41,9 @@ export default function Welcome() {
           <Animated.View entering={FadeInDown.duration(800)} style={styles.card}>
             <LinearGradient colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={{ alignItems: 'center', paddingVertical: 48, paddingHorizontal: space.xl }}>
-              <LeafLogo size={64} animated />
-              <Animated.View entering={FadeIn.delay(500).duration(800)}>
-                <AppText variant="hero" center style={{ fontSize: 44, lineHeight: 54, marginTop: space.lg }}>
-                  {t('appName')}
-                </AppText>
-                <AppText center color={colors.lime} style={{ fontSize: 17, marginTop: 6, fontWeight: '500' }}>
+              <BrandLogo width={250} animated />
+              <Animated.View entering={FadeIn.delay(900).duration(800)}>
+                <AppText center color={brand.sand} style={{ fontSize: 17, marginTop: space.lg, fontWeight: '500' }}>
                   {t('welcomeSlogan')}
                 </AppText>
               </Animated.View>

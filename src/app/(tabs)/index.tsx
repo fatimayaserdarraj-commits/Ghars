@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
+import { BrandMark } from '@/components/brand';
 import { LangToggle } from '@/components/lang-toggle';
 import { ReminderRow } from '@/components/reminder-row';
 import { AppText, Appear, GlassCard, GradientButton, IconBubble, IconName, PressableScale, Row, Screen, SectionTitle } from '@/components/ui';
@@ -55,6 +56,7 @@ export default function Home() {
     <Screen tabBar>
       <Appear>
         <Row justify="space-between">
+          <BrandMark size={42} />
           <View style={{ flex: 1 }}>
             <AppText variant="caption">{greeting} 👋</AppText>
             <AppText variant="title" numberOfLines={1}>

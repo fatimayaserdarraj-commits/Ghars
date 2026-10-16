@@ -1,6 +1,6 @@
-# MPS Garden 🌿
+# Ghars · غَرس 🌿
 
-A React Native + Expo (SDK 57) gardening companion with an animated, glass-style dark UI, full
+**Ghars (غَرس)** is a React Native + Expo (SDK 57) gardening companion with an animated, glass-style dark UI, full
 **English / Arabic (RTL)** support, and AI plant care tuned for Bahrain and the Gulf climate.
 
 ## Features
@@ -57,7 +57,7 @@ New accounts are activated with a code sent by email. The app shows a code scree
 
 1. **Authentication → Sign In / Providers → Email**: turn **Confirm email** on. Check that **Email OTP Length** is
    **6**.
-2. **Authentication → Emails → Templates → Confirm sign up**: set the subject to `Your MPS Garden code: {{ .Token }}`,
+2. **Authentication → Emails → Templates → Confirm sign up**: set the subject to `Your Ghars code: {{ .Token }}`,
    then paste [`supabase/email-templates/confirm-signup.html`](supabase/email-templates/confirm-signup.html) into the
    body. The `{{ .Token }}` part is the code. The default template sends a link instead, so this step is required.
 3. Supabase's built-in email service only sends a few emails per hour and is meant for testing. For real users, connect

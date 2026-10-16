@@ -1,18 +1,17 @@
 <!--
   Supabase → Authentication → Emails → Templates → "Confirm sign up" (needs custom SMTP).
-  Subject:  Your MPS Garden code: {{ .Token }}
+  Subject:  Your Ghars code: {{ .Token }}
   Body:     click "Source", delete everything, and paste everything below this comment.
   The logo is loaded from the public GitHub repo; change the src to use another image.
 -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1C2A22; padding:32px 12px; font-family:Arial, Helvetica, sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1F251E; padding:32px 12px; font-family:Arial, Helvetica, sans-serif;">
   <tr>
     <td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px; background:#2A3D32; border:1px solid #3E5646; border-radius:24px;">
         <tr>
           <td align="center" style="padding:36px 28px 8px;">
-            <img src="https://raw.githubusercontent.com/fatimayaserdarraj-commits/rootly/main/assets/images/icon.png" width="72" height="72" alt="MPS Garden" style="display:block; border-radius:18px; border:0;">
-            <h1 style="margin:18px 0 4px; font-family:Georgia, 'Times New Roman', serif; font-size:28px; font-weight:normal; color:#EEF2EA;">MPS Garden</h1>
-            <p style="margin:0; font-size:14px; color:#C9DDB0;">Bring Nature Home</p>
+            <img src="https://raw.githubusercontent.com/fatimayaserdarraj-commits/rootly/main/assets/images/email-logo.png" width="220" alt="Ghars · غَرس" style="display:block; border:0; width:220px; max-width:100%; height:auto;">
+            <p style="margin:14px 0 0; font-size:14px; color:#D8C5B2;">Bring Nature Home · أدخل الطبيعة إلى بيتك</p>
           </td>
         </tr>
         <tr>
@@ -21,7 +20,7 @@
             <p style="margin:0 0 22px; font-size:14px; line-height:21px; color:#B9C7BD;">Enter this code in the app to activate your account.</p>
             <table role="presentation" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="background:#C9DDB0; border-radius:16px; padding:16px 26px; font-size:34px; font-weight:bold; letter-spacing:10px; color:#1C2B22; font-family:'Courier New', monospace;">{{ .Token }}</td>
+                <td style="background:#D8C5B2; border-radius:16px; padding:16px 26px; font-size:34px; font-weight:bold; letter-spacing:10px; color:#1C2B22; font-family:'Courier New', monospace;">{{ .Token }}</td>
               </tr>
             </table>
             <p style="margin:18px 0 0; font-size:12px; color:#8FA597;">The code expires in 1 hour.</p>
@@ -33,7 +32,7 @@
         <tr>
           <td align="center" dir="rtl" style="padding:18px 28px 0;">
             <p style="margin:0 0 6px; font-size:16px; font-weight:bold; color:#EEF2EA;">تحقّق من بريدك الإلكتروني</p>
-            <p style="margin:0; font-size:14px; line-height:22px; color:#B9C7BD;">أدخل الرمز <b style="color:#C9DDB0;">{{ .Token }}</b> في التطبيق لتفعيل حسابك. تنتهي صلاحية الرمز خلال ساعة.</p>
+            <p style="margin:0; font-size:14px; line-height:22px; color:#B9C7BD;">أدخل الرمز <b style="color:#D8C5B2;">{{ .Token }}</b> في التطبيق لتفعيل حسابك. تنتهي صلاحية الرمز خلال ساعة.</p>
           </td>
         </tr>
         <tr>

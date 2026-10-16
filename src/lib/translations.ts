@@ -4,7 +4,7 @@ export type Lang = 'en' | 'ar';
 export type Localized = Record<Lang, string>;
 
 const en = {
-  appName: 'MPS Garden',
+  appName: 'Ghars',
   tagline: 'Your intelligent companion for a thriving garden',
   // auth
   welcomeTitle: 'Grow smarter,\ngarden happier',
@@ -153,7 +153,7 @@ const en = {
   assistantTitle: 'Plant assistant',
   assistantSubtitle: 'Personalised care advice, any time',
   chatPlaceholder: 'Ask about watering, pests, soil…',
-  chatWelcome: "Hi! I'm your MPS plant assistant. Ask me anything about your plants — I know your garden and the local season.",
+  chatWelcome: "Hi! I'm your Ghars plant assistant. Ask me anything about your plants — I know your garden and the local season.",
   suggestion1: 'Why are my leaves turning yellow?',
   suggestion2: 'What can I plant this month?',
   suggestion3: 'How often should I water a cactus?',
@@ -290,7 +290,7 @@ const en = {
 export type TKey = keyof typeof en;
 
 const ar: Record<TKey, string> = {
-  appName: 'حديقة MPS',
+  appName: 'غَرس',
   tagline: 'رفيقك الذكي لحديقة مزدهرة',
   welcomeTitle: 'ازرع بذكاء،\nواستمتع بحديقتك',
   welcomeBody: 'تعرّف على النباتات، وشخّص مشاكلها بالذكاء الاصطناعي، وتابع دروسًا موجّهة، وانضم إلى مجتمع من محبي الزراعة.',
@@ -434,7 +434,7 @@ const ar: Record<TKey, string> = {
   assistantTitle: 'مساعد النباتات',
   assistantSubtitle: 'نصائح عناية مخصّصة في أي وقت',
   chatPlaceholder: 'اسأل عن الري، الآفات، التربة…',
-  chatWelcome: 'مرحبًا! أنا مساعد النباتات في MPS. اسألني أي شيء عن نباتاتك — أعرف حديقتك والموسم المحلي.',
+  chatWelcome: 'مرحبًا! أنا مساعد النباتات في غَرس. اسألني أي شيء عن نباتاتك — أعرف حديقتك والموسم المحلي.',
   suggestion1: 'لماذا تصفرّ أوراق نبتتي؟',
   suggestion2: 'ماذا أزرع هذا الشهر؟',
   suggestion3: 'كم مرة أسقي الصبار؟',
