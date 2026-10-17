@@ -1,9 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Href, router } from 'expo-router';
-import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { UserAvatar } from '@/components/user-avatar';
 import { BrandMark } from '@/components/brand';
@@ -26,21 +24,6 @@ const ACTIONS: { key: TKey; icon: IconName; gradient: GradientName; href: Href }
   { key: 'seasons', icon: 'sunny-outline', gradient: 'sun', href: '/seasons' },
   { key: 'reminders', icon: 'water-outline', gradient: 'mint', href: '/garden' },
 ];
-
-/** A potted plant that gently floats and sways on the season card. */
-function FloatingPlant({ emoji, isRTL }: { emoji: string; isRTL: boolean }) {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.sin) }), -1, true);
-  }, [t]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: t.value * -8 }, { rotate: `${(t.value - 0.5) * 6}deg` }] }));
-  return (
-    <Animated.View style={[{ position: 'absolute', bottom: 18, [isRTL ? 'left' : 'right']: 14, alignItems: 'center' }, style]}>
-      <Text style={{ fontSize: 30, position: 'absolute', top: -14, [isRTL ? 'right' : 'left']: -6 }}>{emoji}</Text>
-      <Text style={{ fontSize: 92 }}>🪴</Text>
-    </Animated.View>
-  );
-}
 
 export default function Home() {
   const { t, l, isRTL } = useI18n();
@@ -90,34 +73,30 @@ export default function Home() {
 
       <Appear index={2}>
         <PressableScale onPress={() => router.push('/seasons')} scaleTo={0.98}>
-          <View style={styles.hero}>
-            <LinearGradient colors={gradients.deep} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <View style={styles.heroGlow} />
-            <FloatingPlant emoji={season.emoji} isRTL={isRTL} />
-            <View style={{ maxWidth: '64%' }}>
-              <AppText variant="label" color={colors.lime}>
-                {t('seasonNow')} · {l(season.months)}
-              </AppText>
-              <AppText variant="title" style={{ marginTop: 6, fontSize: 30 }}>
-                {t(season.id)}
-              </AppText>
-              <AppText color={colors.textDim} style={{ marginTop: 6, fontSize: 14 }}>
-                {l(season.climate)}
-              </AppText>
-            </View>
-            <Row gap={6} wrap style={{ marginTop: space.lg, maxWidth: '60%' }}>
-              {picks.slice(0, 3).map((p) => (
+          <LinearGradient colors={gradients[season.gradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+            <Text style={[styles.heroEmoji, { [isRTL ? 'left' : 'right']: -6 }]}>{season.emoji}</Text>
+            <AppText variant="label" color="rgba(5,33,15,0.7)">
+              {t('seasonNow')} · {l(season.months)}
+            </AppText>
+            <AppText variant="title" color="#05210F" style={{ marginTop: 4 }}>
+              {t(season.id)}
+            </AppText>
+            <AppText color="rgba(5,33,15,0.8)" style={{ marginTop: 4, maxWidth: '75%' }}>
+              {l(season.climate)}
+            </AppText>
+            <AppText variant="label" color="rgba(5,33,15,0.7)" style={{ marginTop: space.md }}>
+              {t('bestToPlant')}
+            </AppText>
+            <Row gap={6} wrap style={{ marginTop: 6 }}>
+              {picks.map((p) => (
                 <View key={p.id} style={styles.pick}>
-                  <Text style={{ color: colors.text, fontWeight: '600', fontSize: 12 }}>
+                  <Text style={{ color: '#05210F', fontWeight: '700', fontSize: 12 }}>
                     {p.emoji} {l(p.name)}
                   </Text>
                 </View>
               ))}
             </Row>
-            <View style={[styles.heroBtn, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
-              <Text style={{ color: colors.onPrimary, fontWeight: '700', fontSize: 13 }}>{t('seasonsTitle')}</Text>
-            </View>
-          </View>
+          </LinearGradient>
         </PressableScale>
       </Appear>
 
@@ -207,8 +186,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: radius.xl, padding: space.xl, overflow: 'hidden', minHeight: 220, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)' },
-  heroGlow: { position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(201,221,176,0.10)' },
-  pick: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  heroBtn: { alignSelf: 'flex-start', marginTop: space.lg, backgroundColor: colors.lime, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
+  hero: { borderRadius: radius.xl, padding: space.xl, overflow: 'hidden', minHeight: 200 },
+  heroEmoji: { position: 'absolute', top: -8, fontSize: 86, opacity: 0.9 },
+  pick: { backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
 });
