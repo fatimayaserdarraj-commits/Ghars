@@ -104,22 +104,23 @@ export default function About() {
 
           <View style={styles.divider} />
 
-          <View style={[styles.logoTile, { alignSelf: 'stretch', height: 150, padding: space.md }]}>
-            <Image source={require('../../assets/images/partners/dumti-khadra.png')} style={styles.logo} resizeMode="contain" />
-          </View>
-          <AppText variant="h2" style={{ marginTop: space.md }}>
-            {t('campaignTitle')}
-          </AppText>
-          <AppText color={colors.textDim} style={{ marginTop: space.sm, lineHeight: 23 }}>
-            {t('campaignText')}
-          </AppText>
-
+          <Row gap={space.md}>
+            <View style={[styles.logoTile, { width: 92, height: 92, padding: 6 }]}>
+              <Image source={require('../../assets/images/partners/dumti-khadra.png')} style={styles.logo} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <AppText variant="h2">{t('campaignTitle')}</AppText>
+              <AppText variant="caption" style={{ lineHeight: 20 }}>
+                {t('campaignText')}
+              </AppText>
+            </View>
+          </Row>
 
           <View style={styles.divider} />
 
           <Row gap={space.md}>
             <View style={{ borderRadius: 6, overflow: 'hidden' }}>
-              <SdgBadge size={84} />
+              <SdgBadge size={92} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
               <AppText variant="h2">{t('sdgTitle')}</AppText>
