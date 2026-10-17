@@ -355,7 +355,6 @@ function Requirement({ ok, label, optional }: { ok: boolean; label: string; opti
 
 const PROVIDERS: { id: SocialProvider; name: string; icon: IconName; color: string }[] = [
   { id: 'google', name: 'Google', icon: 'logo-google', color: '#EA4335' },
-  { id: 'apple', name: 'Apple', icon: 'logo-apple', color: '#FFFFFF' },
   { id: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
 ];
 

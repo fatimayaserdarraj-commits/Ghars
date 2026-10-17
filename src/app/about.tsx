@@ -1,12 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Constants from 'expo-constants';
-import { View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
 import { brand, BrandLogo } from '@/components/brand';
 import { AppText, Appear, GlassCard, Header, IconBubble, IconName, Row, Screen } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, GradientName, space } from '@/theme';
+
+export const PRIVACY_URL = 'https://fatimayaserdarraj-commits.github.io/Ghars/privacy-policy.html';
 
 const FEATURES: { key: TKey; icon: IconName; tint: GradientName }[] = [
   { key: 'aboutF1', icon: 'scan-outline', tint: 'lime' },
@@ -69,6 +71,9 @@ export default function About() {
           <AppText color={colors.textDim} style={{ marginTop: space.sm, lineHeight: 23 }}>
             {t('aboutPrivacy')}
           </AppText>
+          <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8} style={{ marginTop: space.md }}>
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('privacyPolicy')}</Text>
+          </Pressable>
         </GlassCard>
       </Appear>
 
