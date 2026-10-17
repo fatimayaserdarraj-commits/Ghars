@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { UserAvatar } from '@/components/user-avatar';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconName, Row, Screen, Segmented } from '@/components/ui';
@@ -17,7 +17,7 @@ import { colors, space } from '@/theme';
 export default function Settings() {
   const { t, lang, setLang } = useI18n();
   const { user, isGuest, logout } = useAuth();
-  const { plants, journal, chat, lastSynced, syncNow, wipe } = useData();
+  const { lastSynced, syncNow, wipe } = useData();
   const [syncing, setSyncing] = useState(false);
 
   async function sync() {
@@ -48,11 +48,6 @@ export default function Settings() {
                 </AppText>
               )}
             </View>
-          </Row>
-          <Row gap={space.sm} style={{ marginTop: space.lg }}>
-            <Stat n={plants.length} label={t('myPlants')} />
-            <Stat n={journal.length} label={t('growthJournal')} />
-            <Stat n={chat.filter((m) => m.role === 'user').length} label={t('tabAssistant')} />
           </Row>
         </GlassCard>
       </Appear>
@@ -120,17 +115,6 @@ export default function Settings() {
         </View>
       </Appear>
     </Screen>
-  );
-}
-
-function Stat({ n, label }: { n: number; label: string }) {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 14, backgroundColor: colors.surface }}>
-      <Text style={{ color: colors.primary, fontSize: 22, fontWeight: '900' }}>{n}</Text>
-      <AppText variant="caption" center numberOfLines={1}>
-        {label}
-      </AppText>
-    </View>
   );
 }
 
