@@ -7,7 +7,7 @@ import { FloatingInput } from '@/components/auth/floating-input';
 import { useConfirm } from '@/components/confirm';
 import { AppText, Appear, GhostButton, GlassCard, GradientButton, Header, Row, Screen } from '@/components/ui';
 import { UserAvatar } from '@/components/user-avatar';
-import { useAuth, validEmail, validPassword } from '@/lib/auth';
+import { authErrorDetail, useAuth, validEmail, validPassword } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { supabase, uploadPhoto } from '@/lib/supabase';
 import { TKey } from '@/lib/translations';
@@ -21,6 +21,8 @@ function ErrorText({ error }: { error: TKey | null }) {
   return (
     <AppText variant="caption" color={colors.danger} style={{ marginTop: space.sm }}>
       {t(error)}
+      {/* The generic message alone doesn't say what went wrong, so add Supabase's own reason. */}
+      {error === 'errAuthUnknown' && authErrorDetail() ? `\n${authErrorDetail()}` : ''}
     </AppText>
   );
 }
