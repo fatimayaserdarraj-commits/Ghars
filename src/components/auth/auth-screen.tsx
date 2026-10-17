@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, interpolate, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackdropLeaves } from '@/components/backdrop-leaves';
@@ -65,8 +65,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
   const flip = useSharedValue(0);
   useEffect(() => {
     // A quiet cross-fade when switching modes — nothing moves.
-    flip.value = 0.35;
-    flip.value = withTiming(1, { duration: 220 });
+    flip.value = 1;
   }, [mode, flip]);
   const titleStyle = useAnimatedStyle(() => ({ opacity: flip.value }));
 
@@ -167,11 +166,12 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
             </AppText>
           </Animated.View>
 
-          <Animated.View entering={FadeIn.delay(150).duration(400)} layout={LinearTransition.duration(220)} style={styles.card}>
+          <Animated.View entering={FadeIn.delay(150).duration(400)} style={styles.card}>
             <LinearGradient colors={gradients.glass} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={styles.cardGlow} pointerEvents="none" />
             <View style={{ padding: space.lg, gap: space.md }}>
               <Segmented<Mode>
+                instant
                 value={mode}
                 onChange={switchMode}
                 options={[
@@ -181,7 +181,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               />
 
               {isRegister && (
-                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
+                <Animated.View>
                   <FloatingInput
                     label={t('name')}
                     icon="person-outline"
@@ -247,7 +247,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               )}
 
               {isRegister && (
-                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
+                <Animated.View>
                   <FloatingInput
                     ref={confirmRef}
                     label={t('confirmPassword')}
@@ -266,7 +266,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               )}
 
               {!isRegister && (
-                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
+                <Animated.View>
                   <Pressable onPress={forgot} hitSlop={8} style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end' }}>
                     <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('forgotPassword')}</Text>
                   </Pressable>

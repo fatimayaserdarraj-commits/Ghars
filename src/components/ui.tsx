@@ -491,14 +491,25 @@ export function Chip({ label, active, onPress, emoji }: { label: string; active?
 }
 
 /** Segmented control with a sliding, springy thumb. */
-export function Segmented<T extends string>({ options, value, onChange }: { options: { id: T; label: string; icon?: IconName }[]; value: T; onChange: (v: T) => void }) {
+/** Segmented control. The highlight slides between options unless `instant` is set. */
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  instant,
+}: {
+  options: { id: T; label: string; icon?: IconName }[];
+  value: T;
+  onChange: (v: T) => void;
+  instant?: boolean;
+}) {
   const { isRTL } = useI18n();
   const [width, setWidth] = useState(0);
   const index = Math.max(0, options.findIndex((o) => o.id === value));
   const x = useSharedValue(index);
   useEffect(() => {
-    x.value = withSpring(index, { damping: 18, stiffness: 180 });
-  }, [index, x]);
+    x.value = instant ? index : withSpring(index, { damping: 18, stiffness: 180 });
+  }, [index, x, instant]);
   const seg = width / options.length;
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: (isRTL ? -1 : 1) * x.value * seg }] }));
   return (
