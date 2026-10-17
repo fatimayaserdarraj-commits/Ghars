@@ -53,7 +53,7 @@ export default function Welcome() {
         <Animated.View entering={FadeInUp.delay(900).duration(700)} style={{ gap: space.md, alignItems: 'center' }}>
           <Pressable onPress={() => router.push('/login')} hitSlop={8}>
             <Text style={{ color: colors.text, fontWeight: '600', fontSize: 15 }}>
-              {t('haveAccount')} <Text style={{ color: colors.lime }}>→</Text>
+              {t('haveAccount')}
             </Text>
           </Pressable>
           {!user && (
