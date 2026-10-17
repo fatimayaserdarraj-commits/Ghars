@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconName, Row, Screen, Segmented } from '@/components/ui';
 import { aiOnline, aiProvider } from '@/lib/ai';
 import { plantnetEnabled } from '@/lib/plantnet';
@@ -12,7 +12,7 @@ import { useData } from '@/lib/data';
 import { useI18n } from '@/lib/i18n';
 import { syncEnabled } from '@/lib/sync';
 import { Lang } from '@/lib/translations';
-import { colors, gradients, space } from '@/theme';
+import { colors, space } from '@/theme';
 
 export default function Settings() {
   const { t, lang, setLang } = useI18n();
@@ -38,9 +38,7 @@ export default function Settings() {
       <Appear>
         <GlassCard>
           <Row gap={space.lg}>
-            <LinearGradient colors={gradients.lime} style={{ width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 28, fontWeight: '900', color: '#1C2B22' }}>{isGuest ? '🌱' : user?.name[0]?.toUpperCase()}</Text>
-            </LinearGradient>
+            <UserAvatar size={64} radius={22} />
             <View style={{ flex: 1, gap: 2 }}>
               <AppText variant="h2">{isGuest ? t('guest') : user?.name}</AppText>
               {!isGuest && <AppText variant="caption">{user?.email}</AppText>}

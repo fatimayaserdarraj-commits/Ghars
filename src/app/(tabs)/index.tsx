@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { BrandMark } from '@/components/brand';
 import { LangToggle } from '@/components/lang-toggle';
 import { ReminderRow } from '@/components/reminder-row';
@@ -65,9 +66,7 @@ export default function Home() {
           </View>
           <LangToggle />
           <PressableScale onPress={() => router.push('/settings')}>
-            <LinearGradient colors={gradients.lime} style={styles.avatar}>
-              <Text style={{ fontWeight: '900', color: '#1C2B22', fontSize: 18 }}>{isGuest ? '🌱' : (user?.name[0] ?? '?').toUpperCase()}</Text>
-            </LinearGradient>
+            <UserAvatar size={44} radius={16} />
           </PressableScale>
         </Row>
       </Appear>
@@ -208,7 +207,6 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   hero: { borderRadius: radius.xl, padding: space.xl, overflow: 'hidden', minHeight: 220, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)' },
   heroGlow: { position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(201,221,176,0.10)' },
   pick: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
