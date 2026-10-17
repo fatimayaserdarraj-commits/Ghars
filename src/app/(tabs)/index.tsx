@@ -3,13 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Href, router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { TipPopup } from '@/components/tip-popup';
 import { UserAvatar } from '@/components/user-avatar';
 import { BrandMark } from '@/components/brand';
 import { LangToggle } from '@/components/lang-toggle';
 import { ReminderRow } from '@/components/reminder-row';
 import { AppText, Appear, GlassCard, GradientButton, IconBubble, IconName, PressableScale, Row, Screen, SectionTitle } from '@/components/ui';
 import { PLANTS, plantById } from '@/data/plants';
-import { currentSeason, TIPS } from '@/data/seasons';
+import { currentSeason } from '@/data/seasons';
 import { useAuth } from '@/lib/auth';
 import { daysUntil, useData } from '@/lib/data';
 import { useI18n } from '@/lib/i18n';
@@ -33,7 +34,6 @@ export default function Home() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening');
   const due = reminders.filter((r) => daysUntil(r) <= 0);
-  const tip = TIPS[new Date().getDate() % TIPS.length];
   const picks = PLANTS.filter((p) => p.plantIn.includes(season.id)).slice(0, 5);
 
   return (
@@ -170,17 +170,8 @@ export default function Home() {
         )}
       </Appear>
 
-      <Appear index={14}>
-        <GlassCard>
-          <Row gap={space.md} align="flex-start">
-            <IconBubble emoji="💡" gradient="sun" size={42} />
-            <View style={{ flex: 1 }}>
-              <AppText variant="label">{t('tipOfDay')}</AppText>
-              <AppText style={{ marginTop: 4 }}>{l(tip)}</AppText>
-            </View>
-          </Row>
-        </GlassCard>
-      </Appear>
+
+      <TipPopup />
     </Screen>
   );
 }
