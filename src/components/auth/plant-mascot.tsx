@@ -146,7 +146,6 @@ export function PlantMascot({ mood, shrink }: { mood: Mood; shrink?: SharedValue
       </Animated.View>
       <LinearGradient colors={['#E4E4DE', '#A9ACA4']} style={styles.pot}>
         <View style={styles.potRim} />
-        <Text style={styles.face}>{mood === 'shy' ? '🙈' : mood === 'sad' ? '😟' : mood === 'happy' ? '😄' : mood === 'typing' ? '👀' : '🙂'}</Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -173,5 +172,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   potRim: { position: 'absolute', top: -4, left: -5, right: -5, height: 10, borderRadius: 5, backgroundColor: '#F1F1EC' },
-  face: { fontSize: 18, marginTop: 6 },
 });

@@ -2,13 +2,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
 import { brand, BrandLogo } from '@/components/brand';
-import { AppText, PressableScale, Row, ScreenBackground } from '@/components/ui';
+import { PressableScale, Row, ScreenBackground } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { colors, gradients, radius, space } from '@/theme';
@@ -36,11 +36,6 @@ export default function Welcome() {
             <LinearGradient colors={['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={{ alignItems: 'center', paddingVertical: 48, paddingHorizontal: space.xl }}>
               <BrandLogo width={250} animated />
-              <Animated.View entering={FadeIn.delay(900).duration(800)}>
-                <AppText center color={brand.sand} style={{ fontSize: 17, marginTop: space.lg, fontWeight: '500' }}>
-                  {t('welcomeSlogan')}
-                </AppText>
-              </Animated.View>
 
               <Animated.View entering={FadeInUp.delay(700).duration(700)} style={{ alignSelf: 'stretch', marginTop: space.xl }}>
                 <PressableScale onPress={() => router.push('/register')} style={styles.cta}>
