@@ -13,6 +13,10 @@ export type User = {
   email: string;
   createdAt: number;
   provider: 'email' | 'guest';
+  /** Profile photo URL (or a local file when Supabase isn't set up). */
+  avatar?: string;
+  /** Set when the account signs in with Google or Facebook; email and password then belong to that provider. */
+  social?: string;
 };
 
 type StoredAccount = User & { salt: string; hash: string };
@@ -51,6 +55,13 @@ type AuthValue = {
   signInWithProvider: (provider: SocialProvider) => Promise<AuthError | 'cancelled' | null>;
   /** Send a fresh sign-up code. */
   resendCode: (email: string) => Promise<AuthError | null>;
+  /** Change the display name and/or profile photo. */
+  updateProfile: (changes: { name?: string; avatar?: string | null }) => Promise<AuthError | null>;
+  changePassword: (password: string) => Promise<AuthError | null>;
+  /** Start an email change. With Supabase this returns 'code' and a code is sent to the new address. */
+  changeEmail: (email: string) => Promise<AuthError | 'code' | null>;
+  /** Finish an email change with the code sent to the new address. */
+  confirmEmailChange: (email: string, code: string) => Promise<AuthError | null>;
 };
 
 const ACCOUNTS_KEY = 'mps.accounts';
@@ -76,14 +87,25 @@ function toUser({ salt: _s, hash: _h, ...user }: StoredAccount): User {
   return user;
 }
 
-type SupabaseUser = { id: string; email?: string; created_at: string; user_metadata?: { name?: string } };
-const fromSupabase = (u: SupabaseUser): User => ({
-  id: u.id,
-  name: u.user_metadata?.name ?? u.email?.split('@')[0] ?? '',
-  email: u.email ?? '',
-  createdAt: Date.parse(u.created_at),
-  provider: 'email',
-});
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  created_at: string;
+  user_metadata?: { name?: string; full_name?: string; avatar_url?: string; picture?: string };
+  app_metadata?: { provider?: string };
+};
+const fromSupabase = (u: SupabaseUser): User => {
+  const social = u.app_metadata?.provider && u.app_metadata.provider !== 'email' ? u.app_metadata.provider : undefined;
+  return {
+    id: u.id,
+    name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? u.email?.split('@')[0] ?? '',
+    email: u.email ?? '',
+    createdAt: Date.parse(u.created_at),
+    provider: 'email',
+    avatar: u.user_metadata?.avatar_url ?? u.user_metadata?.picture ?? undefined,
+    social,
+  };
+};
 
 let lastDetail = '';
 /** The raw message from the last failed Supabase auth call, shown under the friendly error. */
@@ -273,9 +295,99 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.error ? supabaseError(res.error.message) : null;
   }, []);
 
+  /** Apply changes to the signed-in local (no Supabase) account. */
+  const updateLocal = useCallback(async (id: string, change: (a: StoredAccount) => Promise<StoredAccount>) => {
+    const accounts = await readJSON<StoredAccount[]>(ACCOUNTS_KEY, []);
+    const i = accounts.findIndex((a) => a.id === id);
+    if (i < 0) return 'errAuthUnknown' as const;
+    accounts[i] = await change(accounts[i]);
+    await writeJSON(ACCOUNTS_KEY, accounts);
+    setUser(toUser(accounts[i]));
+    return null;
+  }, []);
+
+  const updateProfile = useCallback(
+    async ({ name, avatar }: { name?: string; avatar?: string | null }) => {
+      if (!user || user.provider === 'guest') return 'errAuthUnknown' as const;
+      if (supabase) {
+        const data: Record<string, string | null> = {};
+        if (name !== undefined) data.name = name.trim();
+        // Google and Facebook store their photo as `picture` too, so clear both when removing it.
+        if (avatar !== undefined) Object.assign(data, { avatar_url: avatar, picture: avatar });
+        const res = await guarded(() => supabase!.auth.updateUser({ data }));
+        if ('thrown' in res) return res.thrown;
+        if (res.error) return supabaseError(res.error.message);
+        setUser(fromSupabase(res.data.user));
+        return null;
+      }
+      return updateLocal(user.id, async (a) => ({
+        ...a,
+        ...(name !== undefined && { name: name.trim() }),
+        ...(avatar !== undefined && { avatar: avatar ?? undefined }),
+      }));
+    },
+    [user, updateLocal],
+  );
+
+  const changePassword = useCallback(
+    async (password: string) => {
+      if (!user || user.provider === 'guest') return 'errAuthUnknown' as const;
+      if (supabase) {
+        const res = await guarded(() => supabase!.auth.updateUser({ password }));
+        if ('thrown' in res) return res.thrown;
+        return res.error ? supabaseError(res.error.message) : null;
+      }
+      const salt = uid();
+      const hash = await hashPassword(password, salt);
+      return updateLocal(user.id, async (a) => ({ ...a, salt, hash }));
+    },
+    [user, updateLocal],
+  );
+
+  const changeEmail = useCallback(
+    async (email: string) => {
+      if (!user || user.provider === 'guest') return 'errAuthUnknown' as const;
+      const next = email.trim().toLowerCase();
+      if (supabase) {
+        const res = await guarded(() => supabase!.auth.updateUser({ email: next }));
+        if ('thrown' in res) return res.thrown;
+        return res.error ? supabaseError(res.error.message) : ('code' as const);
+      }
+      const accounts = await readJSON<StoredAccount[]>(ACCOUNTS_KEY, []);
+      if (accounts.some((a) => a.email === next && a.id !== user.id)) return 'errExists' as const;
+      return updateLocal(user.id, async (a) => ({ ...a, email: next }));
+    },
+    [user, updateLocal],
+  );
+
+  const confirmEmailChange = useCallback(async (email: string, code: string) => {
+    if (!supabase) return 'errConfig' as const;
+    const res = await guarded(() => supabase!.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: 'email_change' }));
+    if ('thrown' in res) return res.thrown;
+    if (res.error) return supabaseError(res.error.message);
+    if (res.data.user) setUser(fromSupabase(res.data.user));
+    return null;
+  }, []);
+
   const value = useMemo<AuthValue>(
-    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode, signInWithProvider }),
-    [user, ready, register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode, signInWithProvider],
+    () => ({
+      user,
+      ready,
+      isGuest: user?.provider === 'guest',
+      register,
+      login,
+      continueAsGuest,
+      logout,
+      resetPassword,
+      verifyEmail,
+      resendCode,
+      signInWithProvider,
+      updateProfile,
+      changePassword,
+      changeEmail,
+      confirmEmailChange,
+    }),
+    [user, ready, register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode, signInWithProvider, updateProfile, changePassword, changeEmail, confirmEmailChange],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

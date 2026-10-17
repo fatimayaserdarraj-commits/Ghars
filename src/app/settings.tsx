@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { UserAvatar } from '@/components/user-avatar';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconName, Row, Screen, Segmented } from '@/components/ui';
@@ -38,7 +38,7 @@ export default function Settings() {
       <Appear>
         <GlassCard>
           <Row gap={space.lg}>
-            <UserAvatar size={64} radius={22} />
+            <UserAvatar size={64} radius={22} uri={user?.avatar} />
             <View style={{ flex: 1, gap: 2 }}>
               <AppText variant="h2">{isGuest ? t('guest') : user?.name}</AppText>
               {!isGuest && <AppText variant="caption">{user?.email}</AppText>}
@@ -49,6 +49,9 @@ export default function Settings() {
               )}
             </View>
           </Row>
+          {!isGuest && (
+            <GhostButton title={t('editProfile')} icon="create-outline" onPress={() => router.push('/edit-profile')} style={{ marginTop: space.lg, paddingVertical: 12 }} />
+          )}
         </GlassCard>
       </Appear>
 
@@ -92,19 +95,28 @@ export default function Settings() {
       </Appear>
 
       <Appear index={4}>
-        <View style={{ gap: space.md }}>
-          <GhostButton
-            title={t('logout')}
+        <GlassCard padding={space.sm}>
+          <ActionRow
             icon="log-out-outline"
+            title={t('logout')}
             onPress={async () => {
               await logout();
               router.replace('/welcome');
             }}
           />
-          <GhostButton
-            title={t('deleteData')}
+        </GlassCard>
+      </Appear>
+
+      <Appear index={5}>
+        <AppText variant="label" style={{ marginTop: space.md, marginHorizontal: space.xs }}>
+          {t('dangerZone')}
+        </AppText>
+        <View style={styles.danger}>
+          <ActionRow
             icon="trash-outline"
-            style={{ borderColor: `${colors.coral}66` }}
+            title={t('deleteData')}
+            subtitle={t('deleteConfirm')}
+            color={colors.danger}
             onPress={() =>
               Alert.alert(t('deleteData'), t('deleteConfirm'), [
                 { text: t('cancel'), style: 'cancel' },
@@ -115,6 +127,29 @@ export default function Settings() {
         </View>
       </Appear>
     </Screen>
+  );
+}
+
+/** A full-width tappable row with a tinted icon tile, used for account actions. */
+function ActionRow({ icon, title, subtitle, color = colors.text, onPress }: { icon: IconName; title: string; subtitle?: string; color?: string; onPress: () => void }) {
+  const { isRTL } = useI18n();
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]} accessibilityRole="button">
+      <Row gap={space.md}>
+        <View style={[styles.actionIcon, { backgroundColor: `${color}22` }]}>
+          <Ionicons name={icon} size={20} color={color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText style={{ color, fontWeight: '700' }}>{title}</AppText>
+          {subtitle ? (
+            <AppText variant="caption" style={{ marginTop: 2 }}>
+              {subtitle}
+            </AppText>
+          ) : null}
+        </View>
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.textFaint} />
+      </Row>
+    </Pressable>
   );
 }
 
@@ -131,3 +166,16 @@ function InfoRow({ icon, title, body }: { icon: IconName; title: string; body: s
     </Row>
   );
 }
+
+const styles = StyleSheet.create({
+  action: { padding: space.md, borderRadius: 18 },
+  actionIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  danger: {
+    marginTop: space.sm,
+    padding: space.sm,
+    borderRadius: 24,
+    backgroundColor: 'rgba(224,122,110,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(224,122,110,0.35)',
+  },
+});

@@ -1,9 +1,11 @@
-import Svg, { Circle, ClipPath, Defs, Rect } from 'react-native-svg';
 import { useId } from 'react';
+import { Image } from 'react-native';
+import Svg, { Circle, ClipPath, Defs, Rect } from 'react-native-svg';
 
-/** Default profile picture: a soft sage person silhouette. */
-export function UserAvatar({ size = 44, radius = 16 }: { size?: number; radius?: number }) {
+/** Profile picture: the user's photo when set, otherwise a soft sage person silhouette. */
+export function UserAvatar({ size = 44, radius = 16, uri }: { size?: number; radius?: number; uri?: string }) {
   const clip = `avatar-${useId()}`;
+  if (uri) return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#DCE7D3' }} />;
   // Corner radius is given in points; convert it to the 100-unit viewBox.
   const r = (radius / size) * 100;
   return (

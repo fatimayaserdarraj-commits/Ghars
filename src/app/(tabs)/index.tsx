@@ -49,7 +49,7 @@ export default function Home() {
           </View>
           <LangToggle />
           <PressableScale onPress={() => router.push('/settings')}>
-            <UserAvatar size={44} radius={16} />
+            <UserAvatar size={44} radius={16} uri={user?.avatar} />
           </PressableScale>
         </Row>
       </Appear>
