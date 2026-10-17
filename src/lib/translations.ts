@@ -250,7 +250,7 @@ const en = {
   search: 'Search',
   // seasons
   seasonsTitle: 'Season planner',
-  seasonsSubtitle: 'What to grow, and when — tuned for Bahrain's climate',
+  seasonsSubtitle: 'What to grow, and when — tuned for the Bahrain climate',
   winter: 'Winter',
   spring: 'Spring',
   summer: 'Summer',
