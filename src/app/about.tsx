@@ -150,7 +150,7 @@ export default function About() {
         <GlassCard>
           <View style={{ alignItems: 'center', gap: space.sm }}>
             <AppText variant="label">{t('creditTitle')}</AppText>
-            <View style={[styles.logoTile, { width: 110, height: 110, borderRadius: 55, padding: 8 }]}>
+            <View style={[styles.logoTile, { width: 110, height: 110, padding: 10 }]}>
               <Image source={require('../../assets/images/partners/uob.png')} style={styles.logo} resizeMode="contain" accessibilityLabel="University of Bahrain" />
             </View>
             <AppText variant="h2" center>
