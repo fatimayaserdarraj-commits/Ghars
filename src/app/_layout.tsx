@@ -9,6 +9,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ConfirmProvider } from '@/components/confirm';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { DataProvider } from '@/lib/data';
 import { I18nProvider } from '@/lib/i18n';
@@ -42,8 +43,10 @@ export default function RootLayout() {
         <I18nProvider>
           <AuthProvider>
             <DataProvider>
-              <StatusBar style="light" />
-              <RootStack />
+              <ConfirmProvider>
+                <StatusBar style="light" />
+                <RootStack />
+              </ConfirmProvider>
             </DataProvider>
           </AuthProvider>
         </I18nProvider>

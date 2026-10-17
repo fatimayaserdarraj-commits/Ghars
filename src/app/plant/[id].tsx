@@ -2,9 +2,10 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
+import { useConfirm } from '@/components/confirm';
 import { ReminderRow } from '@/components/reminder-row';
 import { AppText, Appear, Chip, EmptyState, GhostButton, GlassCard, GradientButton, Header, IconButton, Input, PressableScale, Row, Screen, SectionTitle, Segmented } from '@/components/ui';
 import { plantById } from '@/data/plants';
@@ -18,6 +19,7 @@ export default function PlantDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, l, lang } = useI18n();
   const { plants, reminders, journal, removePlant, addReminder, removeReminder } = useData();
+  const { confirm } = useConfirm();
   const plant = plants.find((p) => p.id === id);
   const [tab, setTab] = useState<Tab>('care');
   const [adding, setAdding] = useState(false);
@@ -40,19 +42,11 @@ export default function PlantDetail() {
             <IconButton
               icon="trash-outline"
               color={colors.coral}
-              onPress={() =>
-                Alert.alert(t('delete'), name, [
-                  { text: t('cancel'), style: 'cancel' },
-                  {
-                    text: t('delete'),
-                    style: 'destructive',
-                    onPress: () => {
-                      removePlant(plant.id);
-                      router.back();
-                    },
-                  },
-                ])
-              }
+              onPress={async () => {
+                if (!(await confirm({ title: t('deletePlantTitle'), message: t('deletePlantBody', { name }), confirmText: t('delete'), destructive: true }))) return;
+                removePlant(plant.id);
+                router.back();
+              }}
             />
           }
         />
@@ -130,12 +124,9 @@ export default function PlantDetail() {
               <ReminderRow
                 key={r.id}
                 reminder={r}
-                onLongPress={() =>
-                  Alert.alert(t('delete'), t(r.task), [
-                    { text: t('cancel'), style: 'cancel' },
-                    { text: t('delete'), style: 'destructive', onPress: () => removeReminder(r.id) },
-                  ])
-                }
+                onLongPress={async () => {
+                  if (await confirm({ title: t('deleteReminderTitle'), message: t(r.task), confirmText: t('delete'), destructive: true })) removeReminder(r.id);
+                }}
               />
             ))}
           </View>
@@ -150,6 +141,7 @@ export default function PlantDetail() {
 function Journal({ plantId, entries, lang }: { plantId: string; entries: JournalEntry[]; lang: string }) {
   const { t } = useI18n();
   const { addJournal, removeJournal } = useData();
+  const { confirm } = useConfirm();
   const [open, setOpen] = useState(false);
   const [height, setHeight] = useState('');
   const [note, setNote] = useState('');
@@ -224,12 +216,9 @@ function Journal({ plantId, entries, lang }: { plantId: string; entries: Journal
                 <PressableScale
                   style={{ flex: 1 }}
                   scaleTo={0.98}
-                  onLongPress={() =>
-                    Alert.alert(t('delete'), undefined, [
-                      { text: t('cancel'), style: 'cancel' },
-                      { text: t('delete'), style: 'destructive', onPress: () => removeJournal(e.id) },
-                    ])
-                  }>
+                  onLongPress={async () => {
+                    if (await confirm({ title: t('deleteJournalTitle'), message: t('cantUndo'), confirmText: t('delete'), destructive: true })) removeJournal(e.id);
+                  }}>
                   <GlassCard padding={space.md}>
                     <Row justify="space-between">
                       <AppText variant="label">{new Date(e.at).toLocaleDateString(lang === 'ar' ? 'ar-BH' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</AppText>

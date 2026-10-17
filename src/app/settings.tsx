@@ -1,8 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useConfirm } from '@/components/confirm';
 import { UserAvatar } from '@/components/user-avatar';
 import { AppText, Appear, Badge, GhostButton, GlassCard, GradientButton, Header, IconName, Row, Screen, Segmented } from '@/components/ui';
 import { aiOnline, aiProvider } from '@/lib/ai';
@@ -19,15 +20,16 @@ export default function Settings() {
   const { user, isGuest, logout } = useAuth();
   const { lastSynced, syncNow, wipe } = useData();
   const [syncing, setSyncing] = useState(false);
+  const { confirm, notify } = useConfirm();
 
   async function sync() {
-    if (!syncEnabled) return Alert.alert(t('sync'), t('syncNotConfigured'));
+    if (!syncEnabled) return notify(t('sync'), t('syncNotConfigured'));
     setSyncing(true);
     try {
       await syncNow();
-      Alert.alert(t('sync'), t('syncDone'));
+      notify(t('sync'), t('syncDone'));
     } catch {
-      Alert.alert(t('error'));
+      notify(t('error'));
     } finally {
       setSyncing(false);
     }
@@ -100,6 +102,7 @@ export default function Settings() {
             icon="log-out-outline"
             title={t('logout')}
             onPress={async () => {
+              if (!(await confirm({ title: t('confirmLogoutTitle'), message: t('confirmLogoutBody'), confirmText: t('logout'), icon: 'log-out-outline' }))) return;
               await logout();
               router.replace('/welcome');
             }}
@@ -117,12 +120,9 @@ export default function Settings() {
             title={t('deleteData')}
             subtitle={t('deleteConfirm')}
             color={colors.danger}
-            onPress={() =>
-              Alert.alert(t('deleteData'), t('deleteConfirm'), [
-                { text: t('cancel'), style: 'cancel' },
-                { text: t('confirm'), style: 'destructive', onPress: () => wipe() },
-              ])
-            }
+            onPress={async () => {
+              if (await confirm({ title: t('confirmDeleteDataTitle'), message: `${t('deleteConfirm')} ${t('cantUndo')}`, confirmText: t('delete'), destructive: true })) wipe();
+            }}
           />
         </View>
       </Appear>

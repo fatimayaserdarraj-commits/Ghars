@@ -1,9 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { FloatingInput } from '@/components/auth/floating-input';
+import { useConfirm } from '@/components/confirm';
 import { AppText, Appear, GhostButton, GlassCard, GradientButton, Header, Row, Screen } from '@/components/ui';
 import { UserAvatar } from '@/components/user-avatar';
 import { useAuth, validEmail, validPassword } from '@/lib/auth';
@@ -27,6 +28,7 @@ function ErrorText({ error }: { error: TKey | null }) {
 export default function EditProfile() {
   const { t } = useI18n();
   const { user, updateProfile, changePassword, changeEmail, confirmEmailChange } = useAuth();
+  const { confirm: ask, notify } = useConfirm();
 
   const [name, setName] = useState(user?.name ?? '');
   const [nameBusy, setNameBusy] = useState(false);
@@ -51,37 +53,43 @@ export default function EditProfile() {
   async function pickPhoto() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6, allowsEditing: true, aspect: [1, 1] });
     if (res.canceled || !res.assets[0]) return;
+    if (!(await ask({ title: t('confirmPhotoTitle'), message: t('confirmPhotoBody'), icon: 'image-outline' }))) return;
     setPhotoBusy(true);
     try {
       const url = await uploadPhoto(res.assets[0].uri, user!.id);
       const err = await updateProfile({ avatar: url ?? null });
-      Alert.alert(err ? t('error') : t('photoSaved'));
+      notify(err ? t('error') : t('photoSaved'));
     } catch {
-      Alert.alert(t('error'));
+      notify(t('error'));
     } finally {
       setPhotoBusy(false);
     }
   }
 
   async function removePhoto() {
+    if (!(await ask({ title: t('confirmRemovePhotoTitle'), message: t('confirmRemovePhotoBody'), destructive: true, confirmText: t('removePhoto') }))) return;
     setPhotoBusy(true);
     const err = await updateProfile({ avatar: null });
     setPhotoBusy(false);
-    if (err) Alert.alert(t('error'));
+    if (err) notify(t('error'));
   }
 
   async function saveName() {
     if (!name.trim()) return setNameErr('errName');
+    setNameErr(null);
+    if (!(await ask({ title: t('confirmNameTitle'), message: t('confirmNameBody', { name: name.trim() }), icon: 'person-outline' }))) return;
     setNameBusy(true);
     const err = await updateProfile({ name });
     setNameBusy(false);
     setNameErr(err);
-    if (!err) Alert.alert(t('nameSaved'));
+    if (!err) notify(t('nameSaved'));
   }
 
   async function sendEmailCode() {
     if (!validEmail(email)) return setEmailErr('errEmail');
     if (email.trim().toLowerCase() === user!.email) return setEmailErr('sameEmail');
+    setEmailErr(null);
+    if (!(await ask({ title: t('confirmEmailTitle'), message: t('confirmEmailBody', { email: email.trim().toLowerCase() }), icon: 'mail-outline' }))) return;
     setEmailBusy(true);
     const res = await changeEmail(email);
     setEmailBusy(false);
@@ -92,7 +100,7 @@ export default function EditProfile() {
     else {
       setEmailErr(null);
       setEmail('');
-      Alert.alert(t('emailSaved'));
+      notify(t('emailSaved'));
     }
   }
 
@@ -106,13 +114,15 @@ export default function EditProfile() {
       setCodeSent(false);
       setEmail('');
       setCode('');
-      Alert.alert(t('emailSaved'));
+      notify(t('emailSaved'));
     }
   }
 
   async function savePassword() {
     if (!validPassword(password)) return setPassErr('errPassword');
     if (password !== confirm) return setPassErr('passwordMismatch');
+    setPassErr(null);
+    if (!(await ask({ title: t('confirmPasswordTitle'), message: t('confirmPasswordBody'), icon: 'lock-closed-outline' }))) return;
     setPassBusy(true);
     const err = await changePassword(password);
     setPassBusy(false);
@@ -120,7 +130,7 @@ export default function EditProfile() {
     if (!err) {
       setPassword('');
       setConfirm('');
-      Alert.alert(t('passwordSaved'));
+      notify(t('passwordSaved'));
     }
   }
 

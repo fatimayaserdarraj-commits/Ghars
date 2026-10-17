@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TypingDots } from '@/components/animated';
+import { useConfirm } from '@/components/confirm';
 import { RichText } from '@/components/rich-text';
 import { AppText, Badge, Header, IconButton, PressableScale, Row, ScreenBackground, TAB_BAR_SPACE } from '@/components/ui';
 import { plantById } from '@/data/plants';
@@ -22,6 +23,7 @@ export default function Assistant() {
   const { t, lang, isRTL, l } = useI18n();
   const insets = useSafeAreaInsets();
   const { chat, setChat, plants } = useData();
+  const { confirm } = useConfirm();
   const params = useLocalSearchParams<{ prefill?: string }>();
   const [text, setText] = useState('');
   const [typing, setTyping] = useState(false);
@@ -81,7 +83,12 @@ export default function Assistant() {
         back={false}
         title={t('assistantTitle')}
         subtitle={t('assistantSubtitle')}
-        right={chat.length ? <IconButton icon="trash-outline" onPress={() => setChat([])} /> : undefined}
+        right={chat.length ? <IconButton
+              icon="trash-outline"
+              onPress={async () => {
+                if (await confirm({ title: t('clearChatTitle'), message: t('clearChatBody'), confirmText: t('clearChat'), destructive: true })) setChat([]);
+              }}
+            /> : undefined}
       />
       <Row justify="center" style={{ marginBottom: space.sm }}>
         <Badge text={aiOnline ? `● ${t('aiOnline')} · ${aiProvider}` : `○ ${t('aiOffline')}`} color={aiOnline ? colors.primary : colors.sun} />
