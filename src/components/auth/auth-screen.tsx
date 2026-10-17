@@ -148,10 +148,10 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xl, paddingHorizontal: space.xl }}>
-          <Row justify="space-between">
-            <IconButton icon={isRTL ? 'chevron-forward' : 'chevron-back'} onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} />
+          <View style={styles.topBar}>
+            <IconButton icon="chevron-back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} />
             <LangToggle />
-          </Row>
+          </View>
 
           <Animated.View style={[{ alignItems: 'center', justifyContent: 'flex-end' }, heroStyle]}>
             <PlantMascot mood={mood} shrink={kb} />
@@ -171,7 +171,6 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
             <View style={styles.cardGlow} pointerEvents="none" />
             <View style={{ padding: space.lg, gap: space.md }}>
               <Segmented<Mode>
-                instant
                 value={mode}
                 onChange={switchMode}
                 options={[
@@ -395,6 +394,8 @@ function SocialButtons() {
 }
 
 const styles = StyleSheet.create({
+  // Same layout in both languages, so nothing jumps when the language is switched.
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', direction: 'ltr' },
   card: { borderRadius: radius.xl, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)' },
   cardGlow: { position: 'absolute', top: -60, alignSelf: 'center', width: 220, height: 120, borderRadius: 110, backgroundColor: 'rgba(168,198,154,0.12)' },
   banner: { padding: 12, borderRadius: radius.md, backgroundColor: 'rgba(255,90,95,0.12)', borderWidth: 1, borderColor: 'rgba(255,90,95,0.4)' },

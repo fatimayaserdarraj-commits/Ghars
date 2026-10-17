@@ -23,13 +23,13 @@ export default function Welcome() {
       <ScreenBackground />
       <BackdropLeaves />
       <View style={{ flex: 1, paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.lg, paddingHorizontal: space.xl }}>
-        <Row justify="space-between">
+        <View style={styles.topBar}>
           <PressableScale onPress={() => router.push('/about')} style={styles.about} accessibilityLabel={t('aboutUs')}>
             <Ionicons name="information-circle-outline" size={20} color={brand.sand} />
             <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>{t('aboutUs')}</Text>
           </PressableScale>
           <LangToggle />
-        </Row>
+        </View>
 
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Animated.View entering={FadeInDown.duration(800)} style={styles.card}>
@@ -73,6 +73,8 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
+  // Same layout in both languages, so nothing jumps when the language is switched.
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', direction: 'ltr' },
   card: { borderRadius: 34, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backgroundColor: 'rgba(40,58,47,0.35)' },
   cta: { height: 58, borderRadius: radius.pill, overflow: 'hidden', justifyContent: 'center' },
   ctaText: { color: colors.onPrimary, fontSize: 17, fontWeight: '600' },

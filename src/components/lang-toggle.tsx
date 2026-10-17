@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { useI18n } from '@/lib/i18n';
 import { colors } from '@/theme';
 
-/** Compact EN / ع switch with a sliding knob. */
+/** Compact EN / ع switch. The highlight moves instantly. */
 export function LangToggle() {
   const { lang, setLang } = useI18n();
   const x = useSharedValue(lang === 'ar' ? 1 : 0);
   useEffect(() => {
-    x.value = withSpring(lang === 'ar' ? 1 : 0, { damping: 15 });
+    x.value = lang === 'ar' ? 1 : 0;
   }, [lang, x]);
   const knob = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * 44 }] }));
   return (

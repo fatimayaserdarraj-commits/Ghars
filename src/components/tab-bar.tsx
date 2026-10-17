@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useI18n } from '@/lib/i18n';
@@ -42,7 +42,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   }, []);
 
   useEffect(() => {
-    x.value = withSpring(state.index, { damping: 16, stiffness: 160, mass: 0.8 });
+    x.value = state.index;
   }, [state.index, x]);
 
   const pill = useAnimatedStyle(() => ({

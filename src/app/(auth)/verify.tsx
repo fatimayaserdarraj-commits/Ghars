@@ -29,7 +29,7 @@ const LENGTH = 6;
 const RESEND_SECONDS = 60;
 
 export default function Verify() {
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { email = '' } = useLocalSearchParams<{ email: string }>();
   const { verifyEmail, resendCode } = useAuth();
@@ -85,10 +85,10 @@ export default function Verify() {
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xl, paddingHorizontal: space.xl, gap: space.lg }}>
-          <Row justify="space-between">
-            <IconButton icon={isRTL ? 'chevron-forward' : 'chevron-back'} onPress={() => (router.canGoBack() ? router.back() : router.replace('/register'))} />
+          <View style={styles.topBar}>
+            <IconButton icon="chevron-back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/register'))} />
             <LangToggle />
-          </Row>
+          </View>
 
           <View style={{ alignItems: 'center' }}>
             <PlantMascot mood={mood} />
@@ -222,6 +222,8 @@ function Caret() {
 }
 
 const styles = StyleSheet.create({
+  // Same layout in both languages, so nothing jumps when the language is switched.
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', direction: 'ltr' },
   emailPill: {
     alignSelf: 'center',
     flexDirection: 'row',
