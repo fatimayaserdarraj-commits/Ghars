@@ -59,7 +59,7 @@ export default function Home() {
         <Row justify="space-between">
           <BrandMark size={42} />
           <View style={{ flex: 1 }}>
-            <AppText variant="caption">{greeting} 👋</AppText>
+            <AppText variant="caption">{greeting}</AppText>
             <AppText variant="title" numberOfLines={1}>
               {isGuest ? t('gardener') : user?.name.split(' ')[0]}
             </AppText>
