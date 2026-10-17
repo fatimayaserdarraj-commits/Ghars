@@ -20,7 +20,10 @@ export const supabase: SupabaseClient | null = supabaseEnabled
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false,
+        // PKCE: OAuth returns a one-time code that the app exchanges for a session (works on mobile and web).
+        flowType: 'pkce',
+        // On web the browser comes back to the app URL with ?code=…, which the client picks up itself.
+        detectSessionInUrl: Platform.OS === 'web',
       },
     })
   : null;

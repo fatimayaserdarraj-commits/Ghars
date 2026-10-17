@@ -1,4 +1,7 @@
 import * as Crypto from 'expo-crypto';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { readJSON, secure, uid, writeJSON } from './storage';
@@ -14,6 +17,8 @@ export type User = {
 
 type StoredAccount = User & { salt: string; hash: string };
 
+export type SocialProvider = 'google' | 'apple' | 'facebook';
+
 type AuthError =
   | 'errExists'
   | 'errCredentials'
@@ -26,6 +31,8 @@ type AuthError =
   | 'errPassword'
   | 'errEmail'
   | 'errCode'
+  | 'errProviderDisabled'
+  | 'socialNeedsCloud'
   | 'errAuthUnknown';
 
 type AuthValue = {
@@ -40,6 +47,8 @@ type AuthValue = {
   resetPassword: (email: string) => Promise<'sent' | 'unavailable' | 'error'>;
   /** Confirm a new account with the code from the sign-up email. Only with Supabase. */
   verifyEmail: (email: string, code: string) => Promise<AuthError | null>;
+  /** Sign in with Google, Apple or Facebook through Supabase. Returns 'cancelled' if the user closed the browser. */
+  signInWithProvider: (provider: SocialProvider) => Promise<AuthError | 'cancelled' | null>;
   /** Send a fresh sign-up code. */
   resendCode: (email: string) => Promise<AuthError | null>;
 };
@@ -86,6 +95,7 @@ function supabaseError(message: string): AuthError {
   if (m.includes('already registered') || m.includes('already exists')) return 'errExists';
   if (m.includes('not confirmed')) return 'errConfirmEmail';
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'errCredentials';
+  if (m.includes('provider is not enabled') || m.includes('unsupported provider')) return 'errProviderDisabled';
   if (m.includes('token') && (m.includes('expired') || m.includes('invalid'))) return 'errCode';
   if (m.includes('sending') && m.includes('email')) return 'errEmailSend';
   if (m.includes('rate limit') || m.includes('too many')) return 'errLocked';
@@ -229,6 +239,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  const signInWithProvider = useCallback(async (provider: SocialProvider) => {
+    if (!supabase) return 'socialNeedsCloud' as const;
+    if (Platform.OS === 'web') {
+      // The browser leaves the app, signs in, and comes back here; the session is picked up from the URL.
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
+      return error ? supabaseError(error.message) : null;
+    }
+    // Mobile: open the provider's sign-in page in a secure in-app browser and catch the redirect back.
+    const redirectTo = Linking.createURL('auth/callback');
+    const { data, error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true } });
+    if (error || !data.url) return supabaseError(error?.message ?? 'Unsupported provider: provider is not enabled');
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return 'cancelled' as const;
+    const url = new URL(result.url);
+    const params = new URLSearchParams(url.search || url.hash.replace(/^#/, ''));
+    const failure = params.get('error_description') ?? params.get('error');
+    if (failure) return supabaseError(failure);
+    const code = params.get('code');
+    if (!code) return supabaseError('No authorization code returned');
+    const exchange = await guarded(() => supabase!.auth.exchangeCodeForSession(code));
+    if ('thrown' in exchange) return exchange.thrown;
+    if (exchange.error || !exchange.data.session) return supabaseError(exchange.error?.message ?? 'Sign-in failed');
+    await secure.remove(SESSION_KEY);
+    setUser(fromSupabase(exchange.data.session.user));
+    return null;
+  }, []);
+
   const resendCode = useCallback(async (email: string) => {
     if (!supabase) return 'errConfig' as const;
     const res = await guarded(() => supabase!.auth.resend({ type: 'signup', email: email.trim().toLowerCase() }));
@@ -237,8 +274,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode }),
-    [user, ready, register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode],
+    () => ({ user, ready, isGuest: user?.provider === 'guest', register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode, signInWithProvider }),
+    [user, ready, register, login, continueAsGuest, logout, resetPassword, verifyEmail, resendCode, signInWithProvider],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

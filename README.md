@@ -104,10 +104,24 @@ Secrets**.
 The app still works fully offline on one device. For quick AI testing only, you can set
 `EXPO_PUBLIC_ANTHROPIC_API_KEY`. A key built into an app can be extracted, so don't ship it.
 
+### Google, Apple and Facebook sign-in
+
+The buttons use Supabase OAuth. They open the provider's page in a secure in-app browser and return to the app.
+
+1. **Supabase → Authentication → URL Configuration → Redirect URLs**: add `ghars://**`, `exp://**` (Expo Go) and
+   `http://localhost:8081` (web).
+2. **Supabase → Authentication → Sign In / Providers**: enable each provider and paste its client ID and secret.
+   Supabase shows the **Callback URL** to register with the provider
+   (`https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`).
+   - **Google**: Google Cloud Console → APIs & Services → Credentials → *OAuth client ID* (type: Web application) →
+     add the Supabase callback URL under *Authorized redirect URIs*.
+   - **Facebook**: developers.facebook.com → create an app → *Facebook Login* → add the callback URL under *Valid OAuth
+     Redirect URIs*. Copy the App ID and App Secret.
+   - **Apple**: needs a paid Apple Developer account. Create a *Services ID* with *Sign in with Apple* and the callback
+     URL, then generate the secret as described in Supabase's Apple guide.
+
 ## Notes
 
-- **Social sign-in:** Supabase supports Google, Apple and Facebook under **Authentication → Sign In / Providers**.
-  Each one needs OAuth client IDs from that provider. Until they're set up, the buttons show a configuration notice.
 
 - Without Supabase, accounts, plants, journal and chats are stored on the device only. With Supabase, they are also saved to
   your project and follow the user to any phone or tablet.

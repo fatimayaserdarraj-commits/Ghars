@@ -2,24 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOutUp,
-  interpolate,
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, interpolate, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackdropLeaves } from '@/components/backdrop-leaves';
 import { LangToggle } from '@/components/lang-toggle';
 import { AppText, IconButton, IconName, PressableScale, Row, ScreenBackground, Segmented } from '@/components/ui';
-import { authErrorDetail, passwordScore, useAuth, validEmail, validPassword } from '@/lib/auth';
+import { authErrorDetail, passwordScore, SocialProvider, useAuth, validEmail, validPassword } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
 import { colors, gradients, radius, space } from '@/theme';
@@ -74,10 +64,11 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
   // The card's title slides when switching modes.
   const flip = useSharedValue(0);
   useEffect(() => {
-    flip.value = 0;
-    flip.value = withSpring(1, { damping: 14 });
+    // A quiet cross-fade when switching modes — nothing moves.
+    flip.value = 0.35;
+    flip.value = withTiming(1, { duration: 220 });
   }, [mode, flip]);
-  const titleStyle = useAnimatedStyle(() => ({ opacity: flip.value, transform: [{ translateY: interpolate(flip.value, [0, 1], [12, 0]) }] }));
+  const titleStyle = useAnimatedStyle(() => ({ opacity: flip.value }));
 
   const mood: Mood =
     state === 'success' ? 'happy' : Object.values(errors).some(Boolean) ? 'sad' : focus === 'password' || focus === 'confirm' ? 'shy' : focus ? 'typing' : 'idle';
@@ -176,7 +167,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
             </AppText>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).springify().damping(16)} layout={LinearTransition.springify().damping(18)} style={styles.card}>
+          <Animated.View entering={FadeIn.delay(150).duration(400)} layout={LinearTransition.duration(220)} style={styles.card}>
             <LinearGradient colors={gradients.glass} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={styles.cardGlow} pointerEvents="none" />
             <View style={{ padding: space.lg, gap: space.md }}>
@@ -190,7 +181,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               />
 
               {isRegister && (
-                <Animated.View entering={FadeInDown.springify().damping(16)} exiting={FadeOutUp.duration(160)}>
+                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
                   <FloatingInput
                     label={t('name')}
                     icon="person-outline"
@@ -240,7 +231,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               />
 
               {isRegister && form.password.length > 0 && (
-                <Animated.View entering={FadeInDown.springify()} exiting={FadeOutUp.duration(150)} style={{ gap: 10 }}>
+                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)} style={{ gap: 10 }}>
                   <Row gap={6}>
                     {[1, 2, 3, 4].map((i) => (
                       <Segment key={i} on={level >= i} color={STRENGTH[level].color} />
@@ -256,7 +247,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               )}
 
               {isRegister && (
-                <Animated.View entering={FadeInDown.springify().damping(16)} exiting={FadeOutUp.duration(160)}>
+                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
                   <FloatingInput
                     ref={confirmRef}
                     label={t('confirmPassword')}
@@ -275,7 +266,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               )}
 
               {!isRegister && (
-                <Animated.View entering={FadeIn} exiting={FadeOutUp.duration(120)}>
+                <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(120)}>
                   <Pressable onPress={forgot} hitSlop={8} style={{ alignSelf: isRTL ? 'flex-start' : 'flex-end' }}>
                     <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('forgotPassword')}</Text>
                   </Pressable>
@@ -283,7 +274,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
               )}
 
               {errors.form ? (
-                <Animated.View key={shake} entering={FadeInDown.springify()} style={styles.banner}>
+                <Animated.View key={shake} entering={FadeIn.duration(200)} style={styles.banner}>
                   <Row gap={space.sm}>
                     <Ionicons name="alert-circle" size={18} color={colors.danger} />
                     <AppText variant="caption" color={colors.text} style={{ flex: 1 }}>
@@ -308,7 +299,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(350).springify()} style={{ marginTop: space.xl, gap: space.lg }}>
+          <Animated.View entering={FadeIn.delay(300).duration(400)} style={{ marginTop: space.xl, gap: space.lg }}>
             <SocialButtons />
             {!user && (
               <Row justify="center" gap={6}>
@@ -333,7 +324,7 @@ export function AuthScreen({ initialMode }: { initialMode: Mode }) {
 function Segment({ on, color }: { on: boolean; color: string }) {
   const v = useSharedValue(on ? 1 : 0);
   useEffect(() => {
-    v.value = withSpring(on ? 1 : 0, { damping: 14 });
+    v.value = withTiming(on ? 1 : 0, { duration: 220 });
   }, [on, v]);
   const style = useAnimatedStyle(() => ({ transform: [{ scaleX: v.value }], opacity: interpolate(v.value, [0, 1], [0.3, 1]) }));
   return (
@@ -346,7 +337,7 @@ function Segment({ on, color }: { on: boolean; color: string }) {
 function Requirement({ ok, label, optional }: { ok: boolean; label: string; optional?: boolean }) {
   const v = useSharedValue(ok ? 1 : 0);
   useEffect(() => {
-    v.value = withSpring(ok ? 1 : 0, { damping: 10 });
+    v.value = withTiming(ok ? 1 : 0, { duration: 200 });
   }, [ok, v]);
   const dot = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(v.value, [0, 1], [0.85, 1]) }],
@@ -363,14 +354,26 @@ function Requirement({ ok, label, optional }: { ok: boolean; label: string; opti
   );
 }
 
-const PROVIDERS: { name: string; icon: IconName; color: string }[] = [
-  { name: 'Google', icon: 'logo-google', color: '#EA4335' },
-  { name: 'Apple', icon: 'logo-apple', color: '#FFFFFF' },
-  { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
+const PROVIDERS: { id: SocialProvider; name: string; icon: IconName; color: string }[] = [
+  { id: 'google', name: 'Google', icon: 'logo-google', color: '#EA4335' },
+  { id: 'apple', name: 'Apple', icon: 'logo-apple', color: '#FFFFFF' },
+  { id: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
 ];
 
 function SocialButtons() {
   const { t } = useI18n();
+  const { signInWithProvider } = useAuth();
+  const [busy, setBusy] = useState<SocialProvider | null>(null);
+
+  async function go(p: (typeof PROVIDERS)[number]) {
+    if (busy) return;
+    setBusy(p.id);
+    const err = await signInWithProvider(p.id);
+    setBusy(null);
+    if (err === null) router.replace('/(tabs)');
+    else if (err !== 'cancelled') Alert.alert(t('socialTitle'), `${t(err, { provider: p.name })}\n\n${authErrorDetail()}`.trim());
+  }
+
   return (
     <View style={{ gap: space.md }}>
       <Row gap={space.md}>
@@ -379,12 +382,12 @@ function SocialButtons() {
         <View style={styles.line} />
       </Row>
       <Row gap={space.md}>
-        {PROVIDERS.map((p, i) => (
-          <Animated.View key={p.name} entering={FadeInDown.delay(450 + i * 90).springify()} style={{ flex: 1 }}>
-            <PressableScale style={styles.social} accessibilityLabel={p.name} onPress={() => Alert.alert(t('socialTitle'), t('socialBody', { provider: p.name }))}>
-              <Ionicons name={p.icon} size={22} color={p.color} />
+        {PROVIDERS.map((p) => (
+          <View key={p.name} style={{ flex: 1 }}>
+            <PressableScale style={styles.social} accessibilityLabel={`${t('orContinueWith')} ${p.name}`} onPress={() => go(p)} disabled={!!busy && busy !== p.id}>
+              {busy === p.id ? <ActivityIndicator color={colors.text} /> : <Ionicons name={p.icon} size={22} color={p.color} />}
             </PressableScale>
-          </Animated.View>
+          </View>
         ))}
       </Row>
     </View>

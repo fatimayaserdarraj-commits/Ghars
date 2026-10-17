@@ -167,13 +167,6 @@ export default function Verify() {
               </Pressable>
             )}
           </Row>
-          {/* Projects without custom SMTP can only send Supabase's default email, which has a link instead of a code. */}
-          <Row justify="center" gap={6}>
-            <AppText variant="caption">{t('gotLink')}</AppText>
-            <Pressable onPress={() => router.replace('/login')} hitSlop={8}>
-              <Text style={{ color: colors.primary, fontWeight: '800' }}>{t('signIn')}</Text>
-            </Pressable>
-          </Row>
           <Row justify="center" gap={6}>
             <AppText variant="caption">{t('wrongEmail')}</AppText>
             <Pressable onPress={() => router.replace('/register')} hitSlop={8}>

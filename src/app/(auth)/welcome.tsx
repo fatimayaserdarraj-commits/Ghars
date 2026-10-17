@@ -1,9 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackdropLeaves } from '@/components/backdrop-leaves';
@@ -12,28 +11,23 @@ import { brand, BrandLogo } from '@/components/brand';
 import { AppText, PressableScale, Row, ScreenBackground } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { TKey } from '@/lib/translations';
 import { colors, gradients, radius, space } from '@/theme';
-
-const SLIDES: TKey[] = ['welcomeLines1', 'welcomeLines2', 'welcomeLines3'];
 
 export default function Welcome() {
   const { t, isRTL } = useI18n();
   const { continueAsGuest, user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [slide, setSlide] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 3200);
-    return () => clearInterval(id);
-  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenBackground />
       <BackdropLeaves />
       <View style={{ flex: 1, paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.lg, paddingHorizontal: space.xl }}>
-        <Row justify="flex-end">
+        <Row justify="space-between">
+          <PressableScale onPress={() => router.push('/about')} style={styles.about} accessibilityLabel={t('aboutUs')}>
+            <Ionicons name="information-circle-outline" size={20} color={brand.sand} />
+            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>{t('aboutUs')}</Text>
+          </PressableScale>
           <LangToggle />
         </Row>
 
@@ -48,15 +42,7 @@ export default function Welcome() {
                 </AppText>
               </Animated.View>
 
-              <View style={{ height: 84, justifyContent: 'center', marginTop: space.lg }}>
-                <Animated.View key={slide} entering={FadeInUp.duration(500)} exiting={FadeOut.duration(250)}>
-                  <AppText center color={colors.textDim} style={{ fontSize: 15, lineHeight: 23 }}>
-                    {t(SLIDES[slide])}
-                  </AppText>
-                </Animated.View>
-              </View>
-
-              <Animated.View entering={FadeInUp.delay(700).duration(700)} style={{ alignSelf: 'stretch', marginTop: space.lg }}>
+              <Animated.View entering={FadeInUp.delay(700).duration(700)} style={{ alignSelf: 'stretch', marginTop: space.xl }}>
                 <PressableScale onPress={() => router.push('/register')} style={styles.cta}>
                   <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
                   <Row justify="center" gap={space.md}>
@@ -67,12 +53,6 @@ export default function Welcome() {
               </Animated.View>
             </View>
           </Animated.View>
-
-          <Row gap={8} justify="center" style={{ marginTop: space.xl }}>
-            {SLIDES.map((_, i) => (
-              <View key={i} style={[styles.dot, i === slide && styles.dotActive]} />
-            ))}
-          </Row>
         </View>
 
         <Animated.View entering={FadeInUp.delay(900).duration(700)} style={{ gap: space.md, alignItems: 'center' }}>
@@ -101,6 +81,5 @@ const styles = StyleSheet.create({
   card: { borderRadius: 34, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backgroundColor: 'rgba(40,58,47,0.35)' },
   cta: { height: 58, borderRadius: radius.pill, overflow: 'hidden', justifyContent: 'center' },
   ctaText: { color: colors.onPrimary, fontSize: 17, fontWeight: '600' },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.25)' },
-  dotActive: { backgroundColor: colors.lime },
+  about: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
 });

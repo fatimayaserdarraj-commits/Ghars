@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 
 /** One large leaf silhouette with a midrib, drawn in deep greens. */
-function LeafShape({ w, h, id }: { w: number; h: number; id: string }) {
+function LeafShape({ w, h, id: base }: { w: number; h: number; id: string }) {
+  // Unique per instance, since the backdrop can be mounted on several stacked screens at once.
+  const id = `${base}-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <Svg width={w} height={h} viewBox="0 0 100 220">
       <Defs>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
@@ -13,15 +13,17 @@ export const brand = {
 
 /** The Ghars leaf tile (palm frond cut out of a sand-coloured leaf shape). */
 export function BrandMark({ size = 56 }: { size?: number }) {
+  // Gradient ids must be unique per instance: several logos can be mounted at once (e.g. stacked screens).
+  const gid = `ghars-sand-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${MARK_SIZE} ${MARK_SIZE}`}>
       <Defs>
-        <LinearGradient id="ghars-sand" x1="0" y1="0" x2="1" y2="1">
+        <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor={brand.sand} />
           <Stop offset="1" stopColor={brand.sandDeep} />
         </LinearGradient>
       </Defs>
-      <Path d={MARK_PATH} fill="url(#ghars-sand)" fillRule="evenodd" />
+      <Path d={MARK_PATH} fill={`url(#${gid})`} fillRule="evenodd" />
     </Svg>
   );
 }
