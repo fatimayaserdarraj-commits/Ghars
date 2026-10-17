@@ -24,8 +24,6 @@ const FEATURES: { key: TKey; icon: IconName; tint: GradientName }[] = [
 
 const HADITH = 'إنْ قامَتِ السَّاعةُ وفي يدِ أحدِكُم فَسيلةٌ، فإنِ استَطاعَ أن لا تَقومَ حتَّى يغرِسَها فلْيغرِسْها';
 
-const GOALS: TKey[] = ['campaignG1', 'campaignG2', 'campaignG3', 'campaignG4', 'campaignG5', 'campaignG6', 'campaignG7'];
-
 export default function About() {
   const { t } = useI18n();
   return (
@@ -58,9 +56,6 @@ export default function About() {
               {t('nameSource')}
             </AppText>
           </View>
-          <AppText color={colors.textDim} style={{ lineHeight: 23 }}>
-            {t('nameMeaning')}
-          </AppText>
         </GlassCard>
       </Appear>
 
@@ -119,19 +114,6 @@ export default function About() {
             {t('campaignText')}
           </AppText>
 
-          <AppText variant="label" style={{ marginTop: space.lg }}>
-            {t('campaignGoalsTitle')}
-          </AppText>
-          <View style={{ gap: space.sm, marginTop: space.sm }}>
-            {GOALS.map((g, i) => (
-              <Row key={g} gap={space.md} align="flex-start">
-                <View style={styles.num}>
-                  <Text style={styles.numText}>{i + 1}</Text>
-                </View>
-                <AppText style={{ flex: 1, lineHeight: 22 }}>{t(g)}</AppText>
-              </Row>
-            ))}
-          </View>
 
           <View style={styles.divider} />
 
@@ -168,8 +150,8 @@ export default function About() {
         <GlassCard>
           <View style={{ alignItems: 'center', gap: space.sm }}>
             <AppText variant="label">{t('creditTitle')}</AppText>
-            <View style={[styles.logoTile, { width: 84, height: 84 }]}>
-              <Ionicons name="school" size={40} color="#0B4C8C" />
+            <View style={[styles.logoTile, { width: 110, height: 110, borderRadius: 55, padding: 8 }]}>
+              <Image source={require('../../assets/images/partners/uob.png')} style={styles.logo} resizeMode="contain" accessibilityLabel="University of Bahrain" />
             </View>
             <AppText variant="h2" center>
               {t('creditText')}
@@ -194,7 +176,7 @@ export default function About() {
 
 const styles = StyleSheet.create({
   quote: {
-    marginVertical: space.md,
+    marginTop: space.md,
     paddingVertical: space.lg,
     paddingHorizontal: space.md,
     borderRadius: radius.md,
@@ -206,6 +188,4 @@ const styles = StyleSheet.create({
   logoTile: { backgroundColor: '#fff', borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   logo: { width: '100%', height: '100%' },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.lg },
-  num: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(168,198,154,0.18)', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  numText: { color: colors.lime, fontSize: 12, fontWeight: '800' },
 });
