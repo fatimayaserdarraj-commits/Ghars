@@ -1,51 +1,31 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Location from 'expo-location';
+import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Alert, Linking, Text, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import { Linking, Text, View } from 'react-native';
 
-import { AppText, Badge, Chip, GhostButton, GlassCard, Header, IconBubble, Input, PressableScale, Row, Screen } from '@/components/ui';
-import { distanceKm, Shop, SHOPS, ShopType } from '@/data/shops';
+import { AppText, Chip, GhostButton, GlassCard, Header, IconName, Input, PressableScale, Row, Screen } from '@/components/ui';
+import { mapsLink, Shop, SHOPS, ShopType } from '@/data/shops';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
-import { colors, GradientName, space } from '@/theme';
+import { colors, radius, space } from '@/theme';
 
 const TYPES: { id: ShopType | 'all'; key: TKey; emoji: string }[] = [
   { id: 'all', key: 'all', emoji: '✨' },
   { id: 'nursery', key: 'nursery', emoji: '🌳' },
-  { id: 'market', key: 'market', emoji: '🧺' },
-  { id: 'equipment', key: 'equipment', emoji: '🧰' },
-  { id: 'expert', key: 'expert', emoji: '👩‍🌾' },
+  { id: 'online', key: 'onlineShops', emoji: '🛒' },
 ];
 
-const TYPE_GRADIENT: Record<ShopType, GradientName> = { nursery: 'primary', market: 'sun', equipment: 'sky', expert: 'violet' };
+const NEARBY = 'https://www.google.com/maps/search/plant+nursery+%D9%85%D8%B4%D8%AA%D9%84/';
 
 export default function Shops() {
   const { t, l } = useI18n();
   const [type, setType] = useState<ShopType | 'all'>('all');
   const [q, setQ] = useState('');
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-
-  async function locate() {
-    setLocating(true);
-    try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (!perm.granted) return;
-      const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
-    } catch {
-      Alert.alert(t('error'));
-    } finally {
-      setLocating(false);
-    }
-  }
 
   const query = q.trim().toLowerCase();
-  const list = SHOPS.filter((s) => type === 'all' || s.type === type)
-    .filter((s) => !query || [s.name.en, s.name.ar, s.area.en, s.area.ar, s.description.en, s.description.ar].some((x) => x.toLowerCase().includes(query)))
-    .map((s) => ({ s, km: pos ? distanceKm(pos.lat, pos.lng, s.lat, s.lng) : null }))
-    .sort((a, b) => (a.km ?? 0) - (b.km ?? 0) || b.s.rating - a.s.rating);
+  const list = SHOPS.filter((s) => type === 'all' || s.type === type).filter(
+    (s) => !query || [s.name.en, s.name.ar, s.area.en, s.area.ar, s.branches?.en ?? '', s.branches?.ar ?? ''].some((x) => x.toLowerCase().includes(query)),
+  );
 
   return (
     <Screen header={<Header title={t('shopsTitle')} subtitle={t('shopsSubtitle')} />}>
@@ -55,59 +35,58 @@ export default function Shops() {
           <Chip key={x.id} emoji={x.emoji} label={t(x.key)} active={type === x.id} onPress={() => setType(x.id)} />
         ))}
       </Row>
-      <GhostButton title={pos ? `📍 ${t('useLocation')} ✓` : t('useLocation')} icon={locating ? 'hourglass-outline' : 'navigate-outline'} onPress={locate} />
-      <Row gap={6} align="flex-start">
-        <Ionicons name="information-circle-outline" size={14} color={colors.sun} style={{ marginTop: 2 }} />
-        <AppText variant="caption" color={colors.sun} style={{ flex: 1 }}>
-          {t('sampleData')}
-        </AppText>
-      </Row>
       <View style={{ gap: space.md }}>
-        {list.map(({ s, km }, i) => (
-          <Animated.View key={s.id} layout={LinearTransition.springify()} entering={FadeIn.delay(i * 60)}>
-            <ShopCard shop={s} km={km} name={l(s.name)} area={l(s.area)} description={l(s.description)} />
-          </Animated.View>
+        {list.map((s) => (
+          <ShopCard key={s.id} shop={s} name={l(s.name)} area={l(s.area)} branches={s.branches && l(s.branches)} />
         ))}
       </View>
+      <GlassCard>
+        <AppText variant="caption" center>
+          {t('findNearbyHint')}
+        </AppText>
+        <GhostButton title={t('findNearby')} icon="navigate-outline" onPress={() => Linking.openURL(NEARBY)} style={{ marginTop: space.md }} />
+      </GlassCard>
     </Screen>
   );
 }
 
-function ShopCard({ shop, km, name, area, description }: { shop: Shop; km: number | null; name: string; area: string; description: string }) {
+function ShopCard({ shop, name, area, branches }: { shop: Shop; name: string; area: string; branches?: string }) {
   const { t } = useI18n();
-  const maps = `https://www.google.com/maps/search/?api=1&query=${shop.lat},${shop.lng}`;
-  const wa = `https://wa.me/${shop.phone.replace(/\D/g, '')}`;
+  const online = shop.type === 'online';
   return (
-    <GlassCard>
-      <Row gap={space.md} align="flex-start">
-        <IconBubble emoji={shop.emoji} gradient={TYPE_GRADIENT[shop.type]} size={52} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <AppText variant="h2">{name}</AppText>
-          <Row gap={6} wrap>
-            <AppText variant="caption">📍 {area}</AppText>
-            <AppText variant="caption">· ⭐ {shop.rating.toFixed(1)}</AppText>
-            {km != null && <Badge text={t('kmAway', { n: km.toFixed(1) })} color={colors.sky} />}
-          </Row>
-          <AppText variant="caption" color={colors.text}>
-            {description}
+    <GlassCard padding={0}>
+      <View style={{ height: 160, backgroundColor: shop.background ?? '#fff' }}>
+        <Image source={shop.image} style={{ width: '100%', height: '100%' }} contentFit={shop.fit ?? 'cover'} />
+      </View>
+      <View style={{ padding: space.lg, gap: 4 }}>
+        <AppText variant="h2">{name}</AppText>
+        <Row gap={6}>
+          <Ionicons name={online ? 'globe-outline' : 'location-outline'} size={14} color={colors.primary} />
+          <AppText variant="caption" style={{ flex: 1 }}>
+            {area}
           </AppText>
-          <AppText variant="caption">🕒 {shop.hours}</AppText>
-        </View>
-      </Row>
-      <Row gap={space.sm} style={{ marginTop: space.md }}>
-        <Action icon="call" label={t('call')} color={colors.primary} onPress={() => Linking.openURL(`tel:${shop.phone}`)} />
-        <Action icon="logo-whatsapp" label={t('whatsapp')} color="#25D366" onPress={() => Linking.openURL(wa)} />
-        <Action icon="navigate" label={t('directions')} color={colors.sky} onPress={() => Linking.openURL(maps)} />
-      </Row>
+        </Row>
+        {branches ? (
+          <AppText variant="caption" color={colors.textFaint}>
+            {branches}
+          </AppText>
+        ) : null}
+        <Row gap={space.sm} style={{ marginTop: space.md }}>
+          {!online && <Action icon="navigate" label={t('openInMaps')} color={colors.sky} onPress={() => Linking.openURL(mapsLink(shop))} />}
+          {shop.instagram && <Action icon="logo-instagram" label={t('instagram')} color="#E1306C" onPress={() => Linking.openURL(shop.instagram!)} />}
+        </Row>
+      </View>
     </GlassCard>
   );
 }
 
-function Action({ icon, label, color, onPress }: { icon: 'call' | 'logo-whatsapp' | 'navigate'; label: string; color: string; onPress: () => void }) {
+function Action({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
   return (
-    <PressableScale onPress={onPress} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
-      <Ionicons name={icon} size={18} color={color} />
-      <Text style={{ color, fontSize: 11, fontWeight: '800', marginTop: 2 }}>{label}</Text>
+    <PressableScale
+      onPress={onPress}
+      style={{ flex: 1, flexDirection: 'row', gap: 6, justifyContent: 'center', paddingVertical: 11, borderRadius: radius.pill, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
+      <Ionicons name={icon} size={17} color={color} />
+      <Text style={{ color, fontSize: 13, fontWeight: '800' }}>{label}</Text>
     </PressableScale>
   );
 }
