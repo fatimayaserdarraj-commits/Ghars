@@ -19,6 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { AppText, GhostButton, GlassCard, GradientButton, Header, PressableScale, ProgressBar, Row, Screen } from '@/components/ui';
 import { guideById } from '@/data/guides';
 import { useData } from '@/lib/data';
@@ -68,11 +69,7 @@ export default function Lesson() {
       <ProgressBar value={(step + 1) / guide.steps.length} color={colors.lime} />
       <View style={{ overflow: 'hidden', minHeight: 380 }}>
         <Animated.View key={step} entering={entering} exiting={exiting} style={{ gap: space.lg }}>
-          <LinearGradient colors={gradients[guide.gradient]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ height: 180, borderRadius: radius.xl, alignItems: 'center', justifyContent: 'center' }}>
-            <Animated.Text entering={BounceIn.delay(200)} style={{ fontSize: 90 }}>
-              {s.emoji}
-            </Animated.Text>
-          </LinearGradient>
+          <PlantPhoto wiki={s.wiki} emoji={s.emoji} emojiSize={90} width={960} style={{ height: 200, borderRadius: radius.xl }} />
           <AppText variant="label" color={colors.lime}>
             {t('step')} {step + 1}
           </AppText>

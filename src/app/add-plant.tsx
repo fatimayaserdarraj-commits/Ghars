@@ -2,9 +2,10 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { AppText, Chip, GhostButton, GlassCard, GradientButton, Header, Input, PressableScale, Row, Screen } from '@/components/ui';
 import { PLANTS, plantById } from '@/data/plants';
 import { CareTask, GardenPlant, useData } from '@/lib/data';
@@ -76,7 +77,7 @@ export default function AddPlant() {
                 borderColor: active ? colors.primary : colors.border,
                 backgroundColor: active ? 'rgba(168,198,154,0.15)' : colors.surface,
               }}>
-              <Text style={{ fontSize: 28 }}>{p.emoji}</Text>
+              <PlantPhoto wiki={p.wiki} emoji={p.emoji} emojiSize={28} width={330} style={{ width: 56, height: 56, borderRadius: 14 }} />
               <AppText variant="caption" center numberOfLines={1} color={active ? colors.text : colors.textDim} style={{ fontWeight: '700', marginTop: 4 }}>
                 {l(p.name)}
               </AppText>

@@ -2,9 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { ReminderRow } from '@/components/reminder-row';
 import { AppText, Appear, Badge, EmptyState, GlassCard, Header, IconButton, PressableScale, Row, Screen, Segmented } from '@/components/ui';
 import { plantById } from '@/data/plants';
@@ -51,9 +52,7 @@ export default function Garden() {
                         {p.photoUri ? (
                           <Image source={{ uri: p.photoUri }} style={{ width: 64, height: 64, borderRadius: 18 }} />
                         ) : (
-                          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: 'rgba(168,198,154,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ fontSize: 34 }}>{s?.emoji ?? '🌿'}</Text>
-                          </View>
+                          <PlantPhoto wiki={s?.wiki} emoji={s?.emoji ?? '🌿'} emojiSize={34} width={330} style={{ width: 64, height: 64, borderRadius: 18 }} />
                         )}
                         <View style={{ flex: 1, gap: 4 }}>
                           <AppText variant="h2" numberOfLines={1}>

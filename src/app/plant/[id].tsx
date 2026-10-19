@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { useConfirm } from '@/components/confirm';
 import { ReminderRow } from '@/components/reminder-row';
 import { AppText, Appear, Chip, EmptyState, GhostButton, GlassCard, GradientButton, Header, IconButton, Input, PressableScale, Row, Screen, SectionTitle, Segmented } from '@/components/ui';
@@ -53,7 +54,7 @@ export default function PlantDetail() {
       }>
       <Appear>
         <View style={{ height: 200, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: 'rgba(168,198,154,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-          {plant.photoUri ? <Image source={{ uri: plant.photoUri }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : <Text style={{ fontSize: 110 }}>{s?.emoji}</Text>}
+          {plant.photoUri ? <Image source={{ uri: plant.photoUri }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : <PlantPhoto wiki={s?.wiki} emoji={s?.emoji} emojiSize={110} width={960} style={{ width: '100%', height: '100%' }} />}
         </View>
       </Appear>
 

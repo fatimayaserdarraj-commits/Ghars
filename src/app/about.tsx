@@ -166,6 +166,9 @@ export default function About() {
           <AppText variant="caption" center>
             {t('aboutMadeIn')}
           </AppText>
+          <AppText variant="caption" center color={colors.textFaint} style={{ fontSize: 11 }}>
+            {t('photoCredit')}
+          </AppText>
           <AppText variant="caption" center color={colors.textFaint}>
             {t('aboutVersion')} {Constants.expoConfig?.version ?? '1.0.0'}
           </AppText>

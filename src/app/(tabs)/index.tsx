@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Href, router } from 'expo-router';
+import { Image } from 'expo-image';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { TipPopup } from '@/components/tip-popup';
 import { UserAvatar } from '@/components/user-avatar';
 import { BrandMark } from '@/components/brand';
@@ -153,7 +155,11 @@ export default function Home() {
               return (
                 <PressableScale key={p.id} onPress={() => router.push({ pathname: '/plant/[id]', params: { id: p.id } })}>
                   <GlassCard style={{ width: 130 }} padding={space.md}>
-                    <Text style={{ fontSize: 44, textAlign: 'center' }}>{s?.emoji ?? '🌿'}</Text>
+                    {p.photoUri ? (
+                      <Image source={{ uri: p.photoUri }} style={{ height: 84, borderRadius: radius.md }} />
+                    ) : (
+                      <PlantPhoto wiki={s?.wiki} emoji={s?.emoji ?? '🌿'} emojiSize={44} width={330} style={{ height: 84, borderRadius: radius.md }} />
+                    )}
                     <AppText variant="h2" center numberOfLines={1} style={{ marginTop: 6 }}>
                       {p.nickname || (s ? l(s.name) : '')}
                     </AppText>

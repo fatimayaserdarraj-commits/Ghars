@@ -6,6 +6,8 @@ export type SeasonId = 'winter' | 'spring' | 'summer' | 'autumn';
 export type PlantInfo = {
   id: string;
   emoji: string;
+  /** Wikipedia article whose lead photo shows this plant. */
+  wiki: string;
   name: Localized;
   scientific: string;
   family: string;
@@ -30,6 +32,7 @@ const L = (en: string, ar: string): Localized => ({ en, ar });
 export const PLANTS: PlantInfo[] = [
   {
     id: 'tomato',
+    wiki: 'Tomato',
     emoji: '🍅',
     name: L('Tomato', 'الطماطم'),
     scientific: 'Solanum lycopersicum',
@@ -53,6 +56,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'basil',
+    wiki: 'Basil',
     emoji: '🌿',
     name: L('Sweet Basil', 'الريحان'),
     scientific: 'Ocimum basilicum',
@@ -73,6 +77,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'mint',
+    wiki: 'Spearmint',
     emoji: '🌱',
     name: L('Mint', 'النعناع'),
     scientific: 'Mentha spicata',
@@ -93,6 +98,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'aloe',
+    wiki: 'Aloe_vera',
     emoji: '🪴',
     name: L('Aloe Vera', 'الصبار (ألوفيرا)'),
     scientific: 'Aloe barbadensis miller',
@@ -113,6 +119,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'monstera',
+    wiki: 'Monstera_deliciosa',
     emoji: '🍃',
     name: L('Monstera', 'المونستيرا'),
     scientific: 'Monstera deliciosa',
@@ -133,6 +140,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'datepalm',
+    wiki: 'Date_palm',
     emoji: '🌴',
     name: L('Date Palm', 'نخلة التمر'),
     scientific: 'Phoenix dactylifera',
@@ -153,6 +161,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'lettuce',
+    wiki: 'Lettuce',
     emoji: '🥬',
     name: L('Lettuce', 'الخس'),
     scientific: 'Lactuca sativa',
@@ -173,6 +182,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'okra',
+    wiki: 'Okra',
     emoji: '🫛',
     name: L('Okra', 'البامية'),
     scientific: 'Abelmoschus esculentus',
@@ -193,6 +203,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'bougainvillea',
+    wiki: 'Bougainvillea',
     emoji: '🌺',
     name: L('Bougainvillea', 'الجهنمية'),
     scientific: 'Bougainvillea glabra',
@@ -213,6 +224,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'pothos',
+    wiki: 'Epipremnum_aureum',
     emoji: '🪴',
     name: L('Golden Pothos', 'البوتس الذهبي'),
     scientific: 'Epipremnum aureum',
@@ -233,6 +245,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'cucumber',
+    wiki: 'Cucumber',
     emoji: '🥒',
     name: L('Cucumber', 'الخيار'),
     scientific: 'Cucumis sativus',
@@ -253,6 +266,7 @@ export const PLANTS: PlantInfo[] = [
   },
   {
     id: 'jasmine',
+    wiki: 'Jasminum_sambac',
     emoji: '🌼',
     name: L('Arabian Jasmine', 'الفل العربي'),
     scientific: 'Jasminum sambac',

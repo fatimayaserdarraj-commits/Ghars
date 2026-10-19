@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { PlantPhoto } from '@/components/plant-photo';
 import { AppText, Appear, Badge, Chip, GlassCard, Header, PressableScale, Row, Screen } from '@/components/ui';
 import { PLANTS, SeasonId, SeasonType } from '@/data/plants';
 import { currentSeason, SEASONS } from '@/data/seasons';
@@ -84,8 +85,8 @@ export default function Seasons() {
           <Appear key={`${sel}-${p.id}`} index={i} style={{ width: '47%', flexGrow: 1 }}>
             <PressableScale onPress={() => router.push({ pathname: '/add-plant', params: { species: p.id } })}>
               <GlassCard padding={space.md}>
-                <Text style={{ fontSize: 40 }}>{p.emoji}</Text>
-                <AppText variant="h2" style={{ marginTop: 6 }}>
+                <PlantPhoto wiki={p.wiki} emoji={p.emoji} width={330} style={{ height: 110, borderRadius: radius.md }} />
+                <AppText variant="h2" style={{ marginTop: 10 }}>
                   {l(p.name)}
                 </AppText>
                 <AppText variant="caption" numberOfLines={2} style={{ marginVertical: 6 }}>
