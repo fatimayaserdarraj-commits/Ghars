@@ -1,13 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { useState } from 'react';
 import { Linking, Text, View } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
-import { AppText, Chip, GhostButton, GlassCard, Header, IconName, Input, PressableScale, Row, Screen } from '@/components/ui';
-import { mapsLink, Shop, SHOPS, ShopType } from '@/data/shops';
+import { useConfirm } from '@/components/confirm';
+import { AppText, Badge, Chip, GhostButton, GlassCard, Header, IconName, Input, PressableScale, Row, Screen } from '@/components/ui';
+import { distanceKm, mapsLink, Shop, SHOPS, ShopType } from '@/data/shops';
 import { useI18n } from '@/lib/i18n';
 import { TKey } from '@/lib/translations';
-import { colors, radius, space } from '@/theme';
+import { colors, space } from '@/theme';
 
 const TYPES: { id: ShopType | 'all'; key: TKey; emoji: string }[] = [
   { id: 'all', key: 'all', emoji: '✨' },
@@ -16,16 +19,39 @@ const TYPES: { id: ShopType | 'all'; key: TKey; emoji: string }[] = [
 ];
 
 const NEARBY = 'https://www.google.com/maps/search/plant+nursery+%D9%85%D8%B4%D8%AA%D9%84/';
+const hasCoords = SHOPS.some((s) => s.lat != null && s.lng != null);
 
 export default function Shops() {
-  const { t, l } = useI18n();
+  const { t } = useI18n();
+  const { notify } = useConfirm();
   const [type, setType] = useState<ShopType | 'all'>('all');
   const [q, setQ] = useState('');
+  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  async function locate() {
+    setLocating(true);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) return;
+      const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+    } catch {
+      notify(t('error'));
+    } finally {
+      setLocating(false);
+    }
+  }
 
   const query = q.trim().toLowerCase();
-  const list = SHOPS.filter((s) => type === 'all' || s.type === type).filter(
-    (s) => !query || [s.name.en, s.name.ar, s.area.en, s.area.ar, s.branches?.en ?? '', s.branches?.ar ?? ''].some((x) => x.toLowerCase().includes(query)),
-  );
+  const list = SHOPS.filter((s) => type === 'all' || s.type === type)
+    .filter((s) =>
+      !query ||
+      [s.name, s.area, s.branches, s.description].some((v) => v && (v.en.toLowerCase().includes(query) || v.ar.includes(q.trim()))),
+    )
+    .map((s) => ({ s, km: pos && s.lat != null && s.lng != null ? distanceKm(pos.lat, pos.lng, s.lat, s.lng) : null }))
+    // Nearest first when the location is known; shops without a map position go last.
+    .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity) || (b.s.rating ?? 0) - (a.s.rating ?? 0));
 
   return (
     <Screen header={<Header title={t('shopsTitle')} subtitle={t('shopsSubtitle')} />}>
@@ -35,9 +61,14 @@ export default function Shops() {
           <Chip key={x.id} emoji={x.emoji} label={t(x.key)} active={type === x.id} onPress={() => setType(x.id)} />
         ))}
       </Row>
+      {hasCoords && (
+        <GhostButton title={pos ? `📍 ${t('useLocation')} ✓` : t('useLocation')} icon={locating ? 'hourglass-outline' : 'navigate-outline'} onPress={locate} />
+      )}
       <View style={{ gap: space.md }}>
-        {list.map((s) => (
-          <ShopCard key={s.id} shop={s} name={l(s.name)} area={l(s.area)} branches={s.branches && l(s.branches)} />
+        {list.map(({ s, km }, i) => (
+          <Animated.View key={s.id} layout={LinearTransition} entering={FadeIn.delay(i * 60)}>
+            <ShopCard shop={s} km={km} />
+          </Animated.View>
         ))}
       </View>
       <GlassCard>
@@ -50,43 +81,53 @@ export default function Shops() {
   );
 }
 
-function ShopCard({ shop, name, area, branches }: { shop: Shop; name: string; area: string; branches?: string }) {
-  const { t } = useI18n();
+function ShopCard({ shop, km }: { shop: Shop; km: number | null }) {
+  const { t, l } = useI18n();
   const online = shop.type === 'online';
+  const phone = shop.phone?.replace(/[^\d+]/g, '');
   return (
-    <GlassCard padding={0}>
-      <View style={{ height: 160, backgroundColor: shop.background ?? '#fff' }}>
-        <Image source={shop.image} style={{ width: '100%', height: '100%' }} contentFit={shop.fit ?? 'cover'} />
-      </View>
-      <View style={{ padding: space.lg, gap: 4 }}>
-        <AppText variant="h2">{name}</AppText>
-        <Row gap={6}>
-          <Ionicons name={online ? 'globe-outline' : 'location-outline'} size={14} color={colors.primary} />
-          <AppText variant="caption" style={{ flex: 1 }}>
-            {area}
-          </AppText>
-        </Row>
-        {branches ? (
-          <AppText variant="caption" color={colors.textFaint}>
-            {branches}
-          </AppText>
-        ) : null}
-        <Row gap={space.sm} style={{ marginTop: space.md }}>
-          {!online && <Action icon="navigate" label={t('openInMaps')} color={colors.sky} onPress={() => Linking.openURL(mapsLink(shop))} />}
-          {shop.instagram && <Action icon="logo-instagram" label={t('instagram')} color="#E1306C" onPress={() => Linking.openURL(shop.instagram!)} />}
-        </Row>
-      </View>
+    <GlassCard>
+      <Row gap={space.md} align="flex-start">
+        <View style={{ width: 64, height: 64, borderRadius: 18, overflow: 'hidden', backgroundColor: shop.background ?? '#fff' }}>
+          <Image source={shop.image} style={{ width: '100%', height: '100%' }} contentFit={shop.fit ?? 'cover'} />
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <AppText variant="h2">{l(shop.name)}</AppText>
+          <Row gap={6} wrap>
+            <AppText variant="caption">
+              {online ? '🌐' : '📍'} {l(shop.area)}
+            </AppText>
+            {shop.rating != null && <AppText variant="caption">· ⭐ {shop.rating.toFixed(1)}</AppText>}
+            {km != null && <Badge text={t('kmAway', { n: km.toFixed(1) })} color={colors.sky} />}
+          </Row>
+          {shop.branches ? (
+            <AppText variant="caption" color={colors.textFaint}>
+              {l(shop.branches)}
+            </AppText>
+          ) : null}
+          {shop.description ? (
+            <AppText variant="caption" color={colors.text}>
+              {l(shop.description)}
+            </AppText>
+          ) : null}
+          {shop.hours ? <AppText variant="caption">🕒 {shop.hours}</AppText> : null}
+        </View>
+      </Row>
+      <Row gap={space.sm} style={{ marginTop: space.md }}>
+        {phone ? <Action icon="call" label={t('call')} color={colors.primary} onPress={() => Linking.openURL(`tel:${phone}`)} /> : null}
+        {phone ? <Action icon="logo-whatsapp" label={t('whatsapp')} color="#25D366" onPress={() => Linking.openURL(`https://wa.me/${phone.replace(/\D/g, '')}`)} /> : null}
+        {shop.instagram ? <Action icon="logo-instagram" label={t('instagram')} color="#E1306C" onPress={() => Linking.openURL(shop.instagram!)} /> : null}
+        {!online && <Action icon="navigate" label={t('directions')} color={colors.sky} onPress={() => Linking.openURL(mapsLink(shop))} />}
+      </Row>
     </GlassCard>
   );
 }
 
 function Action({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
   return (
-    <PressableScale
-      onPress={onPress}
-      style={{ flex: 1, flexDirection: 'row', gap: 6, justifyContent: 'center', paddingVertical: 11, borderRadius: radius.pill, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
-      <Ionicons name={icon} size={17} color={color} />
-      <Text style={{ color, fontSize: 13, fontWeight: '800' }}>{label}</Text>
+    <PressableScale onPress={onPress} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
+      <Ionicons name={icon} size={18} color={color} />
+      <Text style={{ color, fontSize: 11, fontWeight: '800', marginTop: 2 }}>{label}</Text>
     </PressableScale>
   );
 }

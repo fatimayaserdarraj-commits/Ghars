@@ -19,11 +19,31 @@ export type Shop = {
   instagram?: string;
   /** A specific Google Maps link; otherwise the shop is searched by name. */
   maps?: string;
+  // Optional details — fill in when known; anything left out is simply not shown.
+  description?: Localized;
+  /** International format, e.g. '+97312345678'. Enables the Call and WhatsApp buttons. */
+  phone?: string;
+  /** Opening hours, e.g. '07:00 – 19:00'. */
+  hours?: string;
+  /** Google rating out of 5, e.g. 4.6. */
+  rating?: number;
+  /** Map position; enables "Sort by distance". */
+  lat?: number;
+  lng?: number;
 };
 
 const L = (en: string, ar: string): Localized => ({ en, ar });
 
-/** Plant nurseries and shops in Bahrain. */
+/**
+ * Plant nurseries and shops in Bahrain.
+ *
+ * To add details to a shop, add any of these lines inside its { … } block:
+ *   phone: '+97312345678',
+ *   hours: '07:00 – 19:00',
+ *   rating: 4.6,
+ *   description: L('Palms, fruit trees and seedlings.', 'نخيل وأشجار مثمرة وشتلات.'),
+ *   lat: 26.2186, lng: 50.4567,   // from Google Maps: right-click the place → copy the numbers
+ */
 export const SHOPS: Shop[] = [
   {
     id: 'abu-saiba',
@@ -106,5 +126,15 @@ export const SHOPS: Shop[] = [
 
 /** Google Maps link for a shop: its own link, or a search for its name in Bahrain. */
 export function mapsLink(shop: Shop) {
-  return shop.maps ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${shop.name.en}, Bahrain`)}`;
+  if (shop.maps) return shop.maps;
+  const query = shop.lat != null && shop.lng != null ? `${shop.lat},${shop.lng}` : `${shop.name.en}, Bahrain`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+export function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number) {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
 }
