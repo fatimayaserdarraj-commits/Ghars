@@ -233,7 +233,6 @@ function PlantResult({ r, photo, onReset }: { r: Identification; photo: Photo | 
         <GlassCard>
           <Row gap={space.lg}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontSize: 34 }}>{r.emoji}</Text>
               <AppText variant="title">{r.name}</AppText>
               <AppText variant="caption" style={{ fontStyle: 'italic' }}>
                 {r.scientific}
@@ -292,7 +291,6 @@ function DiagnosisCard({ r, onReset }: { r: DiagnosisResult; onReset: () => void
         <GlassCard>
           <Row gap={space.lg}>
             <View style={{ flex: 1, gap: 6 }}>
-              <Text style={{ fontSize: 34 }}>{r.emoji}</Text>
               <Badge text={t(cat.key)} color={cat.color} />
               <AppText variant="title">{r.name}</AppText>
             </View>

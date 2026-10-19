@@ -83,6 +83,7 @@ export default function Shops() {
 
 function ShopCard({ shop, km }: { shop: Shop; km: number | null }) {
   const { t, l } = useI18n();
+  const { notify } = useConfirm();
   const online = shop.type === 'online';
   const phone = shop.phone?.replace(/[^\d+]/g, '');
   return (
@@ -114,18 +115,27 @@ function ShopCard({ shop, km }: { shop: Shop; km: number | null }) {
         </View>
       </Row>
       <Row gap={space.sm} style={{ marginTop: space.md }}>
-        {phone ? <Action icon="call" label={t('call')} color={colors.primary} onPress={() => Linking.openURL(`tel:${phone}`)} /> : null}
-        {phone ? <Action icon="logo-whatsapp" label={t('whatsapp')} color="#25D366" onPress={() => Linking.openURL(`https://wa.me/${phone.replace(/\D/g, '')}`)} /> : null}
-        {shop.instagram ? <Action icon="logo-instagram" label={t('instagram')} color="#E1306C" onPress={() => Linking.openURL(shop.instagram!)} /> : null}
-        {!online && <Action icon="navigate" label={t('directions')} color={colors.sky} onPress={() => Linking.openURL(mapsLink(shop))} />}
+        <Action icon="call" label={t('call')} color={colors.primary} disabled={!phone} onPress={() => (phone ? Linking.openURL(`tel:${phone}`) : notify(t('call'), t('noPhone')))} />
+        <Action
+          icon="logo-whatsapp"
+          label={t('whatsapp')}
+          color="#25D366"
+          disabled={!phone}
+          onPress={() => (phone ? Linking.openURL(`https://wa.me/${phone.replace(/\D/g, '')}`) : notify(t('whatsapp'), t('noPhone')))}
+        />
+        {online && shop.instagram ? (
+          <Action icon="logo-instagram" label={t('instagram')} color="#E1306C" onPress={() => Linking.openURL(shop.instagram!)} />
+        ) : (
+          <Action icon="navigate" label={t('directions')} color={colors.sky} onPress={() => Linking.openURL(mapsLink(shop))} />
+        )}
       </Row>
     </GlassCard>
   );
 }
 
-function Action({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
+function Action({ icon, label, color, onPress, disabled }: { icon: IconName; label: string; color: string; onPress: () => void; disabled?: boolean }) {
   return (
-    <PressableScale onPress={onPress} style={{ flex: 1, paddingVertical: 10, borderRadius: 14, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
+    <PressableScale onPress={onPress} style={{ opacity: disabled ? 0.45 : 1, flex: 1, paddingVertical: 10, borderRadius: 14, backgroundColor: `${color}1F`, borderWidth: 1, borderColor: `${color}55`, alignItems: 'center' }}>
       <Ionicons name={icon} size={18} color={color} />
       <Text style={{ color, fontSize: 11, fontWeight: '800', marginTop: 2 }}>{label}</Text>
     </PressableScale>
