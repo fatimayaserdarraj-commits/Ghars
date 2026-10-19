@@ -29,7 +29,7 @@ export function PlantPhoto({
   const src = url ? (failed === url ? url : sizedThumb(url, width)) : null;
   return (
     <View style={[{ overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(168,198,154,0.14)' }, style]}>
-      {emoji && shown !== src ? <Text style={{ fontSize: emojiSize }}>{emoji}</Text> : null}
+      {emoji && (!src || shown !== src) ? <Text style={{ fontSize: emojiSize }}>{emoji}</Text> : null}
       {src ? (
         <Image
           source={{ uri: src }}
